@@ -40,6 +40,7 @@ class DownloadRequest(BaseModel):
     number: Optional[Dict[str, int]] = None
     increase: Optional[Dict[str, bool]] = None
     collects_id: Optional[str] = None
+    live: Optional[Dict[str, Any]] = None
 
 
 class JobResponse(BaseModel):
@@ -70,6 +71,8 @@ class SettingsPatch(BaseModel):
     mode: Optional[List[str]] = None
     number: Optional[Dict[str, int]] = None
     increase: Optional[Dict[str, bool]] = None
+    comments: Optional[Dict[str, Any]] = None
+    live: Optional[Dict[str, Any]] = None
 
 
 class ArchiveDeleteRequest(BaseModel):
@@ -351,6 +354,8 @@ def _config_summary(config: ConfigLoader, deps: _ServerDeps) -> Dict[str, Any]:
         "mode": config.get("mode") or [],
         "number": config.get("number") or {},
         "increase": config.get("increase") or {},
+        "comments": config.get("comments") or {},
+        "live": config.get("live") or {},
         "cookies": {
             **state,
             "verified": False,
@@ -589,6 +594,22 @@ def _download_overrides(req: DownloadRequest) -> Dict[str, Any]:
         overrides["increase"] = {str(key): bool(value) for key, value in req.increase.items()}
     if req.collects_id is not None:
         overrides["collects_id"] = str(req.collects_id).strip()
+    if req.live is not None:
+        live = dict(req.live or {})
+        current_live: Dict[str, Any] = {}
+        if "max_duration_seconds" in live:
+            current_live["max_duration_seconds"] = max(
+                0,
+                int(float(live.get("max_duration_seconds") or 0)),
+            )
+        if "idle_timeout_seconds" in live:
+            idle_timeout = live.get("idle_timeout_seconds")
+            current_live["idle_timeout_seconds"] = max(
+                1,
+                int(float(idle_timeout if idle_timeout is not None else 30)),
+            )
+        if current_live:
+            overrides["live"] = current_live
     return overrides
 
 
@@ -636,6 +657,26 @@ def _apply_settings_patch(config: ConfigLoader, deps: _ServerDeps, patch: Settin
             if key in current_increase:
                 current_increase[key] = bool(value)
         updates["increase"] = current_increase
+    if "comments" in updates:
+        current_comments = dict(config.get("comments") or {})
+        for key, value in updates["comments"].items():
+            if key == "enabled":
+                current_comments[key] = bool(value)
+            elif key == "include_replies":
+                current_comments[key] = bool(value)
+            elif key in {"max_comments", "page_size"}:
+                current_comments[key] = max(0, int(value or 0))
+        updates["comments"] = current_comments
+    if "live" in updates:
+        current_live = dict(config.get("live") or {})
+        for key, value in updates["live"].items():
+            if key == "max_duration_seconds":
+                current_live[key] = max(0, int(float(value or 0)))
+            elif key == "idle_timeout_seconds":
+                current_live[key] = max(1, int(float(value if value is not None else 30)))
+            elif key == "chunk_size":
+                current_live[key] = max(1024, int(value or 65536))
+        updates["live"] = current_live
 
     config.update(**updates)
     deps.refresh_runtime_config()
@@ -1075,6 +1116,48 @@ def build_app(config: ConfigLoader) -> FastAPI:
         return {
             "collection_type": collection_type,
             "collection_id": collection_id,
+            "items": items,
+            "has_more": bool(page.get("has_more")),
+            "cursor": int(page.get("max_cursor") or 0),
+        }
+
+    @app.get("/api/v1/search")
+    async def keyword_search(
+        keyword: str = Query(..., min_length=1),
+        cursor: int = Query(0, ge=0),
+        count: int = Query(24, ge=1, le=50),
+        sort_type: int = Query(0, ge=0, le=2),
+        publish_time: int = Query(0, ge=0),
+    ) -> Dict[str, Any]:
+        cookies = _require_login_cookies(deps)
+        clean_keyword = keyword.strip()
+        if not clean_keyword:
+            raise HTTPException(status_code=400, detail="keyword is required")
+
+        try:
+            async with DouyinAPIClient(cookies, proxy=deps.config.get("proxy")) as api_client:
+                page = await api_client.search_aweme(
+                    clean_keyword,
+                    offset=cursor,
+                    count=count,
+                    sort_type=sort_type,
+                    publish_time=publish_time,
+                )
+                items = [
+                    _compact_aweme(item)
+                    for item in page.get("items") or []
+                    if isinstance(item, dict) and (item.get("aweme_id") or item.get("group_id"))
+                ]
+        except HTTPException:
+            raise
+        except LoginRequiredError as exc:
+            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"search failed: {exc}") from exc
+
+        items = await _annotate_download_states(config, items)
+        return {
+            "keyword": clean_keyword,
             "items": items,
             "has_more": bool(page.get("has_more")),
             "cursor": int(page.get("max_cursor") or 0),

@@ -40,10 +40,12 @@
           <button class="nav-item" type="button" data-view="following"><span class="nav-icon">◎</span><span>我的关注</span></button>
           <button class="nav-item" type="button" data-view="collections"><span class="nav-icon">◇</span><span>我的收藏</span></button>
           <button class="nav-item" type="button" data-view="preview"><span class="nav-icon">▦</span><span>作者预览</span></button>
+          <button class="nav-item" type="button" data-view="search"><span class="nav-icon">⌕</span><span>关键词搜索</span></button>
 
           <div class="nav-group">本地</div>
           <button class="nav-item active" type="button" data-view="download"><span class="nav-icon">↓</span><span>下载</span></button>
           <button class="nav-item" type="button" data-view="batch"><span class="nav-icon">≡</span><span>批量下载</span></button>
+          <button class="nav-item" type="button" data-view="live"><span class="nav-icon">●</span><span>直播录制</span></button>
           <button class="nav-item" type="button" data-view="tasks"><span class="nav-icon">▣</span><span>任务中心</span></button>
           <button class="nav-item" type="button" data-view="archive"><span class="nav-icon">▤</span><span>下载记录</span></button>
 
@@ -178,6 +180,60 @@
           </section>
         </section>
 
+        <section id="searchView" class="view" data-title="关键词搜索" data-eyebrow="发现作品">
+          <section class="surface-panel toolbar-panel">
+            <div class="panel-head">
+              <div>
+                <h2>关键词搜索</h2>
+                <p id="searchState">输入关键词后搜索作品，勾选需要下载的内容。</p>
+              </div>
+              <div class="button-cluster">
+                <button id="runSearchBtn" class="primary-button" type="button">搜索</button>
+                <button id="downloadSelectedSearchBtn" class="secondary-button" type="button" disabled>下载选中</button>
+              </div>
+            </div>
+            <div class="filter-row">
+              <input id="keywordInput" class="field-input" type="search" placeholder="输入关键词" />
+              <select id="searchSort" class="field-input select-field">
+                <option value="0">综合排序</option>
+                <option value="1">最多点赞</option>
+                <option value="2">最新发布</option>
+              </select>
+              <select id="searchPublishTime" class="field-input select-field">
+                <option value="0">不限时间</option>
+                <option value="1">一天内</option>
+                <option value="7">一周内</option>
+                <option value="182">半年内</option>
+              </select>
+              <input id="searchCount" class="field-input" type="number" min="1" max="50" value="24" />
+              <button id="loadMoreSearchBtn" class="secondary-button" type="button" disabled>加载更多</button>
+            </div>
+          </section>
+          <div id="searchResults" class="works-grid"></div>
+        </section>
+
+        <section id="liveView" class="view" data-title="直播录制" data-eyebrow="实验性功能">
+          <section class="surface-panel link-panel">
+            <div class="panel-head">
+              <div>
+                <h2>录制直播流</h2>
+                <p>粘贴 live.douyin.com 或 /follow/live/ 链接，任务中心会实时显示录制状态。</p>
+              </div>
+              <span id="liveBadge" class="soft-badge">待创建</span>
+            </div>
+            <textarea id="liveUrlInput" class="url-input" rows="5" spellcheck="false" placeholder="https://live.douyin.com/..."></textarea>
+            <div class="filter-row">
+              <label class="field-label">最大录制秒数<input id="liveMaxDuration" class="field-input" type="number" min="0" value="0" /></label>
+              <label class="field-label">空闲超时秒数<input id="liveIdleTimeout" class="field-input" type="number" min="1" value="30" /></label>
+            </div>
+            <div class="action-row">
+              <button id="startLiveBtn" class="primary-button" type="button">开始录制</button>
+              <button id="stopLiveBtn" class="ghost-button danger" type="button" disabled>停止当前录制</button>
+            </div>
+            <div id="liveResult" class="result-strip muted">0 表示不限制录制时长，直到直播结束或手动停止。</div>
+          </section>
+        </section>
+
         <section id="followingView" class="view" data-title="我的关注" data-eyebrow="账号内容">
           <section class="surface-panel toolbar-panel">
             <div class="panel-head">
@@ -196,6 +252,12 @@
                 <option value="name">按昵称</option>
                 <option value="aweme">按作品数</option>
                 <option value="fans">按粉丝数</option>
+              </select>
+              <select id="followDownloadMode" class="field-input select-field">
+                <option value="post">下载作品</option>
+                <option value="like">下载喜欢</option>
+                <option value="mix">下载合集</option>
+                <option value="music">下载音乐</option>
               </select>
               <div class="segmented" role="group" aria-label="视图">
                 <button class="active" type="button" data-follow-layout="list">列表</button>
@@ -372,6 +434,11 @@
                 <label class="toggle-line"><input id="settingCover" type="checkbox" />下载封面</label>
                 <label class="toggle-line"><input id="settingAvatar" type="checkbox" />下载头像</label>
                 <label class="toggle-line"><input id="settingJson" type="checkbox" />保存 JSON</label>
+                <label class="toggle-line"><input id="settingCommentsEnabled" type="checkbox" />采集评论</label>
+                <label class="toggle-line"><input id="settingCommentsReplies" type="checkbox" />包含评论回复</label>
+                <label class="field-label">评论上限<input id="settingMaxComments" class="field-input" type="number" min="0" /></label>
+                <label class="field-label">默认直播秒数<input id="settingLiveMaxDuration" class="field-input" type="number" min="0" /></label>
+                <label class="field-label">直播空闲超时<input id="settingLiveIdleTimeout" class="field-input" type="number" min="1" /></label>
               </div>
               <div id="loginProgress" class="result-strip muted">点击“一键登录抖音”后，会打开抖音网页；你完成登录时后台会自动提取 Cookie。</div>
               <div id="cookieFile" class="result-strip muted"></div>
@@ -382,6 +449,6 @@
     </div>
 
     <div id="toastHost" class="toast-host" aria-live="polite"></div>
-    <script src="/static/app.js?v=20260704-11" defer></script>
+    <script src="/static/app.js?v=20260704-12" defer></script>
   </body>
 </html>

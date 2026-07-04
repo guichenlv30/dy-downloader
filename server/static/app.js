@@ -22,7 +22,9 @@ const VIEW_META = {
   following: { title: "我的关注", eyebrow: "账号内容" },
   collections: { title: "我的收藏", eyebrow: "账号内容" },
   preview: { title: "作者预览", eyebrow: "主页解析" },
+  search: { title: "关键词搜索", eyebrow: "发现作品" },
   batch: { title: "批量下载", eyebrow: "批量任务" },
+  live: { title: "直播录制", eyebrow: "实验性功能" },
   tasks: { title: "任务中心", eyebrow: "下载队列" },
   archive: { title: "下载记录", eyebrow: "本地历史" },
   settings: { title: "设置", eyebrow: "偏好" },
@@ -79,6 +81,16 @@ const state = {
     loading: false,
     selected: new Set(),
   },
+  search: {
+    items: [],
+    cursor: 0,
+    hasMore: false,
+    loading: false,
+    selected: new Set(),
+    keyword: "",
+    error: "",
+  },
+  liveJobId: "",
   archive: { total: 0, page: 1, items: [] },
   archiveAuthors: [],
   archiveDetailAuthor: "",
@@ -627,6 +639,7 @@ async function refreshJobs() {
   const result = await api("/jobs");
   state.jobs = [...(result.jobs || [])].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   renderActiveJob();
+  renderLiveStatus();
   renderTasks();
 }
 
@@ -862,20 +875,25 @@ function renderFollowing(errorMessage = "") {
   });
 }
 
-async function downloadUsers(secUids) {
+function selectedFollowDownloadMode() {
+  return $("#followDownloadMode")?.value || "post";
+}
+
+async function downloadUsers(secUids, mode = selectedFollowDownloadMode()) {
   const valid = secUids.filter(Boolean);
   if (!valid.length) return;
+  const safeMode = WORK_MODE_LABELS[mode] ? mode : "post";
   try {
     for (const secUid of valid) {
       await api("/download", {
         method: "POST",
         body: JSON.stringify({
           url: `https://www.douyin.com/user/${secUid}`,
-          mode: ["post"],
+          mode: [safeMode],
         }),
       });
     }
-    toast(`已创建 ${valid.length} 个关注下载任务`);
+    toast(`已创建 ${valid.length} 个${WORK_MODE_LABELS[safeMode]}下载任务`);
     await refreshJobs();
     showView("tasks");
   } catch (error) {
@@ -1069,6 +1087,200 @@ async function downloadSelectedWorks() {
   const selected = state.authorWorks.selected;
   const items = state.authorWorks.items.filter((item) => selected.has(`${item.type}:${item.id}`));
   await downloadWorkItems(items);
+}
+
+function renderSearchResults(errorMessage = "") {
+  errorMessage = renderErrorText(errorMessage || state.search.error);
+  const list = $("#searchResults");
+  if (!list) return;
+  const count = state.search.items.length;
+  const selectedCount = state.search.selected.size;
+  $("#searchState").textContent = state.search.keyword
+    ? `关键词：${state.search.keyword} · 已加载 ${count} 个结果`
+    : "输入关键词后搜索作品，勾选需要下载的内容。";
+  $("#downloadSelectedSearchBtn").disabled = selectedCount === 0;
+  $("#loadMoreSearchBtn").disabled = state.search.loading || !state.search.hasMore;
+  $("#loadMoreSearchBtn").textContent = state.search.loading ? "加载中" : "加载更多";
+
+  if (errorMessage) {
+    list.innerHTML = `<div class="surface-panel placeholder-panel"><div class="placeholder-mark">⌕</div><h2>搜索失败</h2><p>${escapeHtml(errorMessage)}</p></div>`;
+    return;
+  }
+  if (!count) {
+    list.innerHTML = `<div class="surface-panel placeholder-panel"><div class="placeholder-mark">⌕</div><h2>${state.search.loading ? "搜索中" : "暂无搜索结果"}</h2></div>`;
+    return;
+  }
+
+  list.innerHTML = state.search.items.map((item) => {
+    const key = `${item.type}:${item.id}`;
+    return renderWorkCard(item, {
+      key,
+      selected: state.search.selected.has(key),
+      cardKeyAttr: "data-search-work-key",
+      selectAttr: "data-search-work-select",
+      downloadAttr: "data-download-search-work",
+      copyAttr: "data-copy-search-work",
+    });
+  }).join("");
+
+  $$("[data-search-work-select]", list).forEach((input) => {
+    input.addEventListener("change", () => {
+      if (input.checked) state.search.selected.add(input.dataset.searchWorkSelect);
+      else state.search.selected.delete(input.dataset.searchWorkSelect);
+      renderSearchResults();
+    });
+  });
+  $$("[data-download-search-work]", list).forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = state.search.items.find((entry) => `${entry.type}:${entry.id}` === button.dataset.downloadSearchWork);
+      if (item) downloadWorkItems([item]);
+    });
+  });
+  $$("[data-copy-search-work]", list).forEach((button) => {
+    button.addEventListener("click", () => copyText(button.dataset.copySearchWork || ""));
+  });
+}
+
+async function runKeywordSearch({ reset = true } = {}) {
+  const keyword = $("#keywordInput").value.trim();
+  if (!keyword) {
+    toast("请输入关键词", "error");
+    return;
+  }
+  if (state.search.loading) return;
+  if (reset) {
+    state.search.items = [];
+    state.search.cursor = 0;
+    state.search.hasMore = false;
+    state.search.selected.clear();
+  }
+  state.search.keyword = keyword;
+  state.search.error = "";
+  state.search.loading = true;
+  renderSearchResults();
+  try {
+    const params = new URLSearchParams({
+      keyword,
+      cursor: String(reset ? 0 : state.search.cursor || 0),
+      count: String(Math.max(1, Math.min(50, Number($("#searchCount").value || 24)))),
+      sort_type: $("#searchSort").value,
+      publish_time: $("#searchPublishTime").value,
+    });
+    const result = await api(`/search?${params.toString()}`);
+    const seen = new Set(state.search.items.map((item) => `${item.type}:${item.id}`));
+    for (const item of result.items || []) {
+      const key = `${item.type}:${item.id}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        state.search.items.push(item);
+      }
+    }
+    state.search.cursor = Number(result.cursor || 0);
+    state.search.hasMore = Boolean(result.has_more) && state.search.cursor > 0;
+    state.search.error = "";
+  } catch (error) {
+    state.search.error = error.message;
+    toast(`搜索失败：${error.message}`, "error");
+    return;
+  } finally {
+    state.search.loading = false;
+    renderSearchResults();
+  }
+}
+
+async function downloadSelectedSearchResults() {
+  const selected = state.search.selected;
+  const items = state.search.items.filter((item) => selected.has(`${item.type}:${item.id}`));
+  await downloadWorkItems(items);
+}
+
+function liveOverridesFromForm() {
+  return {
+    live: {
+      max_duration_seconds: Math.max(0, Number($("#liveMaxDuration").value || 0)),
+      idle_timeout_seconds: Math.max(1, Number($("#liveIdleTimeout").value || 30)),
+    },
+  };
+}
+
+function fillLiveFormFromConfig() {
+  const live = state.config?.live || {};
+  if ($("#liveMaxDuration")) $("#liveMaxDuration").value = live.max_duration_seconds ?? 0;
+  if ($("#liveIdleTimeout")) $("#liveIdleTimeout").value = live.idle_timeout_seconds ?? 30;
+}
+
+function renderLiveStatus() {
+  const badge = $("#liveBadge");
+  const result = $("#liveResult");
+  const stopBtn = $("#stopLiveBtn");
+  if (!badge || !result || !stopBtn) return;
+  const liveJob =
+    state.jobs.find((job) => job.job_id === state.liveJobId) ||
+    state.jobs.find((job) => /live\.douyin\.com|\/follow\/live\//.test(job.url || ""));
+  const running = liveJob && ["pending", "running"].includes(liveJob.status);
+  stopBtn.disabled = !running;
+  if (!liveJob) {
+    badge.textContent = "待创建";
+    result.classList.add("muted");
+    result.textContent = "0 表示不限制录制时长，直到直播结束或手动停止。";
+    return;
+  }
+  state.liveJobId = liveJob.job_id;
+  const progress = progressData(liveJob);
+  const detail = jobDetailText(liveJob);
+  badge.textContent = statusText(liveJob.status);
+  result.classList.remove("muted");
+  result.innerHTML = `
+    <strong>${escapeHtml(liveJob.job_id)}</strong>
+    <span class="pill">进度 ${escapeHtml(progress.label)}</span>
+    ${detail ? `<span class="pill">${escapeHtml(detail)}</span>` : ""}
+  `;
+}
+
+async function startLiveRecording() {
+  const raw = $("#liveUrlInput").value.trim();
+  if (!raw) {
+    toast("请输入直播链接", "error");
+    return;
+  }
+  const cleaned = extractUrl(raw);
+  $("#liveUrlInput").value = cleaned;
+  $("#startLiveBtn").disabled = true;
+  $("#liveBadge").textContent = "创建中";
+  try {
+    const job = await api("/download", {
+      method: "POST",
+      body: JSON.stringify({ url: cleaned, ...liveOverridesFromForm() }),
+    });
+    state.liveJobId = job.job_id;
+    state.activeJobId = job.job_id;
+    await refreshJobs();
+    toast(`直播录制任务已创建：${job.job_id}`);
+    showView("tasks");
+  } catch (error) {
+    $("#liveBadge").textContent = "创建失败";
+    toast(`直播录制失败：${error.message}`, "error");
+  } finally {
+    $("#startLiveBtn").disabled = false;
+    renderLiveStatus();
+  }
+}
+
+async function stopLiveRecording() {
+  const liveJob =
+    state.jobs.find((job) => job.job_id === state.liveJobId) ||
+    state.jobs.find((job) => /live\.douyin\.com|\/follow\/live\//.test(job.url || ""));
+  if (!liveJob) return;
+  try {
+    await api(`/jobs/${liveJob.job_id}`, { method: "DELETE" });
+    state.liveJobId = "";
+    await refreshJobs();
+    toast("已停止直播录制任务");
+  } catch (error) {
+    toast(`停止失败：${error.message}`, "error");
+  } finally {
+    renderLiveStatus();
+  }
 }
 
 function openCollectionWorks(item) {
@@ -1604,6 +1816,12 @@ function fillSettingsForm() {
   $("#settingCover").checked = Boolean(cfg.media?.cover);
   $("#settingAvatar").checked = Boolean(cfg.media?.avatar);
   $("#settingJson").checked = Boolean(cfg.media?.json);
+  $("#settingCommentsEnabled").checked = Boolean(cfg.comments?.enabled);
+  $("#settingCommentsReplies").checked = Boolean(cfg.comments?.include_replies);
+  $("#settingMaxComments").value = cfg.comments?.max_comments ?? 0;
+  $("#settingLiveMaxDuration").value = cfg.live?.max_duration_seconds ?? 0;
+  $("#settingLiveIdleTimeout").value = cfg.live?.idle_timeout_seconds ?? 30;
+  fillLiveFormFromConfig();
 }
 
 async function saveSettings() {
@@ -1623,6 +1841,15 @@ async function saveSettings() {
     cover: $("#settingCover").checked,
     avatar: $("#settingAvatar").checked,
     json: $("#settingJson").checked,
+    comments: {
+      enabled: $("#settingCommentsEnabled").checked,
+      include_replies: $("#settingCommentsReplies").checked,
+      max_comments: Number($("#settingMaxComments").value || 0),
+    },
+    live: {
+      max_duration_seconds: Number($("#settingLiveMaxDuration").value || 0),
+      idle_timeout_seconds: Number($("#settingLiveIdleTimeout").value || 30),
+    },
   };
   $("#saveSettingsBtn").disabled = true;
   try {
@@ -1779,6 +2006,11 @@ function showView(view) {
 
   if (view === "archive") refreshArchive();
   if (view === "preview") renderPreview();
+  if (view === "search") renderSearchResults();
+  if (view === "live") {
+    fillLiveFormFromConfig();
+    renderLiveStatus();
+  }
   if (view === "tasks") refreshJobs();
   if (view === "following") {
     if (!state.following.length) syncFollowing();
@@ -1801,6 +2033,11 @@ async function refreshCurrentView() {
     else if (state.view === "collections") await syncCollections();
     else if (state.view === "preview" && state.authorWorks.visible) await loadAuthorWorks({ reset: true });
     else if (state.view === "preview") renderPreview();
+    else if (state.view === "search") renderSearchResults();
+    else if (state.view === "live") {
+      await refreshJobs();
+      renderLiveStatus();
+    }
     else if (state.view === "following" && state.authorWorks.visible) await loadAuthorWorks({ reset: true });
     else if (state.view === "following") await syncFollowing();
     else {
@@ -1831,7 +2068,21 @@ function bindEvents() {
     });
   }
   $("#resolveAuthorBtn").addEventListener("click", resolvePreviewAuthor);
+  $("#runSearchBtn").addEventListener("click", () => runKeywordSearch({ reset: true }));
+  $("#downloadSelectedSearchBtn").addEventListener("click", downloadSelectedSearchResults);
+  $("#loadMoreSearchBtn").addEventListener("click", () => runKeywordSearch({ reset: false }));
+  $("#keywordInput").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") runKeywordSearch({ reset: true });
+  });
+  $("#searchSort").addEventListener("change", () => {
+    if ($("#keywordInput").value.trim()) runKeywordSearch({ reset: true });
+  });
+  $("#searchPublishTime").addEventListener("change", () => {
+    if ($("#keywordInput").value.trim()) runKeywordSearch({ reset: true });
+  });
   $("#startBatchBtn").addEventListener("click", startBatch);
+  $("#startLiveBtn").addEventListener("click", startLiveRecording);
+  $("#stopLiveBtn").addEventListener("click", stopLiveRecording);
   $("#cancelActiveJobBtn").addEventListener("click", cancelActiveJob);
   $("#clearDoneJobsBtn").addEventListener("click", clearDoneJobs);
   $("#taskSearch").addEventListener("input", renderTasks);
@@ -1912,6 +2163,8 @@ async function boot() {
     if (login.status === "running") startLoginPolling();
     await refreshJobs();
     renderPreview();
+    renderSearchResults();
+    renderLiveStatus();
     renderFollowing();
     renderCollections();
   } catch (error) {

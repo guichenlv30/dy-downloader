@@ -745,6 +745,107 @@ def test_user_works_endpoint(tmp_path, monkeypatch):
         assert states["7000000000000000002"]["exists"] is False
 
 
+def test_keyword_search_endpoint(tmp_path, monkeypatch):
+    config = make_config(
+        tmp_path,
+        cookies={
+            "ttwid": "ttwid",
+            "odin_tt": "odin",
+            "passport_csrf_token": "csrf",
+            "sessionid": "session",
+        },
+    )
+
+    class FakeAPI:
+        def __init__(self, cookies, proxy=None):
+            self.cookies = cookies
+            self.proxy = proxy
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def search_aweme(
+            self,
+            keyword,
+            *,
+            offset=0,
+            count=24,
+            sort_type=0,
+            publish_time=0,
+        ):
+            assert keyword == "户外"
+            assert offset == 0
+            assert count == 12
+            assert sort_type == 2
+            assert publish_time == 7
+            return {
+                "items": [
+                    {
+                        "aweme_id": "7000000000000000099",
+                        "desc": "搜索作品",
+                        "aweme_type": 0,
+                        "create_time": 1700000200,
+                        "statistics": {"digg_count": 88},
+                        "video": {"cover": {"url_list": ["https://img.example/search.jpg"]}},
+                    }
+                ],
+                "has_more": True,
+                "max_cursor": 12,
+            }
+
+    monkeypatch.setattr("server.app.DouyinAPIClient", FakeAPI)
+    app = build_app(config)
+
+    with TestClient(app) as client:
+        resp = client.get(
+            "/api/v1/search?keyword=户外&count=12&sort_type=2&publish_time=7"
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["keyword"] == "户外"
+        assert data["has_more"] is True
+        assert data["cursor"] == 12
+        assert data["items"][0]["id"] == "7000000000000000099"
+        assert data["items"][0]["title"] == "搜索作品"
+        assert data["items"][0]["url"].endswith("/video/7000000000000000099")
+        assert data["items"][0]["download_state"]["status"] == "none"
+
+
+def test_config_endpoint_updates_comments_and_live_settings(tmp_path):
+    config = make_config(
+        tmp_path,
+        comments={"enabled": False, "include_replies": False, "max_comments": 0},
+        live={"max_duration_seconds": 0, "idle_timeout_seconds": 30, "chunk_size": 65536},
+    )
+    app = build_app(config)
+
+    with TestClient(app) as client:
+        resp = client.patch(
+            "/api/v1/config",
+            json={
+                "comments": {
+                    "enabled": True,
+                    "include_replies": True,
+                    "max_comments": 50,
+                },
+                "live": {
+                    "max_duration_seconds": 600,
+                    "idle_timeout_seconds": 0,
+                },
+            },
+        )
+        assert resp.status_code == 200
+        data = resp.json()["config"]
+        assert data["comments"]["enabled"] is True
+        assert data["comments"]["include_replies"] is True
+        assert data["comments"]["max_comments"] == 50
+        assert data["live"]["max_duration_seconds"] == 600
+        assert data["live"]["idle_timeout_seconds"] == 1
+
+
 def test_config_endpoint_summarizes_cookies_without_secret_values(tmp_path):
     config = make_config(
         tmp_path,
