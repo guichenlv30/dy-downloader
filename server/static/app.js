@@ -575,8 +575,7 @@ async function createDownload(rawUrl, overrides = currentModeOverrides()) {
   });
   state.activeJobId = result.job_id;
   await refreshJobs();
-  toast(`任务已创建：${result.job_id}`);
-  showView("tasks");
+  toast(`任务已创建：${result.job_id}，可在任务中心查看`);
   return result;
 }
 
@@ -629,7 +628,7 @@ async function startBatch() {
     $("#batchResult").textContent = `已创建 ${ok} 个任务，失败 ${failures.length} 个`;
     if (failures.length) toast(failures[0], "error");
     await refreshJobs();
-    showView("tasks");
+    toast(`批量任务已创建：成功 ${ok} 个，失败 ${failures.length} 个`);
   } finally {
     $("#startBatchBtn").disabled = false;
   }
@@ -1075,9 +1074,8 @@ async function downloadWorkItems(items) {
         body: JSON.stringify({ url: item.url }),
       });
     }
-    toast(`已创建 ${valid.length} 个作品下载任务`);
+    toast(`已创建 ${valid.length} 个作品下载任务，可在任务中心查看`);
     await refreshJobs();
-    showView("tasks");
   } catch (error) {
     toast(`创建失败：${error.message}`, "error");
   }
@@ -1261,8 +1259,7 @@ async function startLiveRecording() {
     state.liveJobId = job.job_id;
     state.activeJobId = job.job_id;
     await refreshJobs();
-    toast(`直播录制任务已创建：${job.job_id}`);
-    showView("tasks");
+    toast(`直播录制任务已创建：${job.job_id}，可在任务中心查看`);
   } catch (error) {
     $("#liveBadge").textContent = "创建失败";
     toast(`直播录制失败：${error.message}`, "error");

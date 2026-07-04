@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
@@ -108,9 +109,11 @@ class BrowserLoginManager:
         cookie_manager: CookieManager,
         *,
         proxy: str = "",
+        profile_dir: str = "",
     ):
         self.cookie_manager = cookie_manager
         self.proxy = str(proxy or "").strip()
+        self.profile_dir = str(profile_dir or "").strip()
         self._lock = asyncio.Lock()
         self._session: Optional[BrowserLoginSession] = None
 
@@ -181,11 +184,21 @@ class BrowserLoginManager:
                 launch_kwargs: Dict[str, Any] = {"headless": False}
                 if self.proxy:
                     launch_kwargs["proxy"] = {"server": self.proxy}
-                browser = await playwright.chromium.launch(**launch_kwargs)
-                context = await browser.new_context(
-                    locale="zh-CN",
-                    viewport={"width": 1280, "height": 820},
-                )
+                if self.profile_dir:
+                    Path(self.profile_dir).mkdir(parents=True, exist_ok=True)
+                    context = await playwright.chromium.launch_persistent_context(
+                        self.profile_dir,
+                        **launch_kwargs,
+                        locale="zh-CN",
+                        viewport={"width": 1280, "height": 820},
+                    )
+                    browser = context.browser
+                else:
+                    browser = await playwright.chromium.launch(**launch_kwargs)
+                    context = await browser.new_context(
+                        locale="zh-CN",
+                        viewport={"width": 1280, "height": 820},
+                    )
                 page = await context.new_page()
                 session._browser = browser
                 session._context = context

@@ -860,6 +860,74 @@ def test_keyword_search_verify_check_returns_actionable_error(tmp_path, monkeypa
         assert "抖音搜索接口要求验证" in resp.json()["detail"]
 
 
+def test_keyword_search_verify_check_uses_browser_fallback(tmp_path, monkeypatch):
+    config = make_config(
+        tmp_path,
+        cookies={
+            "ttwid": "ttwid",
+            "odin_tt": "odin",
+            "passport_csrf_token": "csrf",
+            "sessionid": "session",
+        },
+    )
+    calls = {"browser": 0}
+
+    class FakeAPI:
+        def __init__(self, cookies, proxy=None):
+            self.cookies = cookies
+            self.proxy = proxy
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def search_aweme(self, *args, **kwargs):
+            return {
+                "items": [],
+                "has_more": False,
+                "max_cursor": 0,
+                "raw": {
+                    "status_code": 0,
+                    "data": [],
+                    "search_nil_info": {
+                        "search_nil_type": "verify_check",
+                        "search_nil_item": "verify_check",
+                    },
+                },
+            }
+
+        async def search_aweme_via_browser(self, keyword, **kwargs):
+            calls["browser"] += 1
+            assert keyword == "洛克王国"
+            assert str(kwargs["user_data_dir"]).endswith("browser_profile")
+            return {
+                "items": [
+                    {
+                        "aweme_id": "7000000000000000100",
+                        "desc": "浏览器搜索结果",
+                        "aweme_type": 0,
+                        "create_time": 1700000200,
+                    }
+                ],
+                "has_more": False,
+                "max_cursor": 1,
+                "raw": {"status_code": 0, "data": []},
+            }
+
+    monkeypatch.setattr("server.app.DouyinAPIClient", FakeAPI)
+    app = build_app(config)
+
+    with TestClient(app) as client:
+        resp = client.get("/api/v1/search?keyword=洛克王国")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert calls["browser"] == 1
+        assert data["items"][0]["id"] == "7000000000000000100"
+        assert data["items"][0]["title"] == "浏览器搜索结果"
+
+
 def test_config_endpoint_updates_comments_and_live_settings(tmp_path):
     config = make_config(
         tmp_path,

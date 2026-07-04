@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import random
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import aiohttp
 
@@ -722,7 +722,29 @@ class DouyinAPIClient:
         raw = await self._request_json(
             "/aweme/v1/web/general/search/single/", params, suppress_error=True
         )
-        # 搜索结果每条在 data[].aweme_info；需要拍平
+        items, has_more, next_offset = self._normalize_search_response(raw)
+
+        status_code = int(raw.get("status_code") or 0)
+        if not items and (status_code or not raw):
+            logger.warning(
+                "Search returned no items for keyword=%r (status_code=%s, offset=%s). "
+                "Possible causes: cookies expired, signature rejected, or query blocked.",
+                keyword,
+                status_code,
+                offset,
+            )
+
+        return {
+            "items": items,
+            "has_more": has_more,
+            "max_cursor": next_offset,
+            "status_code": status_code,
+            "raw": raw,
+        }
+
+    @staticmethod
+    def _normalize_search_response(raw: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], bool, int]:
+        # 搜索结果每条在 data[].aweme_info；需要拍平。
         data_list = raw.get("data") if isinstance(raw.get("data"), list) else []
         items: List[Dict[str, Any]] = []
         for entry in data_list:
@@ -743,24 +765,149 @@ class DouyinAPIClient:
             next_offset = int(cursor_value)
         except (TypeError, ValueError):
             next_offset = 0
+        return items, has_more, next_offset
 
-        status_code = int(raw.get("status_code") or 0)
-        if not items and (status_code or not raw):
-            logger.warning(
-                "Search returned no items for keyword=%r (status_code=%s, offset=%s). "
-                "Possible causes: cookies expired, signature rejected, or query blocked.",
-                keyword,
-                status_code,
-                offset,
-            )
+    async def search_aweme_via_browser(
+        self,
+        keyword: str,
+        *,
+        offset: int = 0,
+        count: int = 10,
+        sort_type: int = 0,
+        publish_time: int = 0,
+        user_data_dir: Optional[str] = None,
+        timeout_seconds: int = 120,
+    ) -> Dict[str, Any]:
+        """Use a real browser search page when Douyin requires verify_check.
 
+        The web search endpoint can reject signed HTTP requests even with a
+        valid login cookie. In that case a visible browser lets the user pass
+        Douyin's verification page, while this method captures the page's own
+        search API responses.
+        """
+
+        try:
+            from playwright.async_api import async_playwright
+        except ImportError as exc:
+            raise RuntimeError("Playwright 未安装，无法打开浏览器完成搜索验证") from exc
+
+        captured_pages: List[Dict[str, Any]] = []
+        captured_items: List[Dict[str, Any]] = []
+        seen_ids: set[str] = set()
+        browser = None
+        context = None
+
+        async def capture_response(response: Any) -> None:
+            url = str(getattr(response, "url", "") or "")
+            if "/aweme/v1/web/general/search/single/" not in url:
+                return
+            try:
+                raw = await response.json()
+            except Exception as exc:
+                logger.debug("Browser search response parse failed: %s", exc)
+                return
+            if not isinstance(raw, dict):
+                return
+            captured_pages.append(raw)
+            items, _has_more, _cursor = self._normalize_search_response(raw)
+            for item in items:
+                item_id = str(item.get("aweme_id") or item.get("group_id") or "")
+                if not item_id or item_id in seen_ids:
+                    continue
+                seen_ids.add(item_id)
+                captured_items.append(item)
+
+        async with async_playwright() as playwright:
+            launch_kwargs: Dict[str, Any] = {"headless": False}
+            if self.proxy:
+                launch_kwargs["proxy"] = {"server": self.proxy}
+
+            if user_data_dir:
+                context = await playwright.chromium.launch_persistent_context(
+                    user_data_dir,
+                    **launch_kwargs,
+                    locale="zh-CN",
+                    viewport={"width": 1280, "height": 820},
+                )
+                browser = context.browser
+            else:
+                browser = await playwright.chromium.launch(**launch_kwargs)
+                context = await browser.new_context(
+                    locale="zh-CN",
+                    viewport={"width": 1280, "height": 820},
+                )
+
+            cookies = self._browser_cookie_payload()
+            if cookies:
+                await context.add_cookies(cookies)
+
+            page = await context.new_page()
+            page.on("response", capture_response)
+            target_url = f"{self.BASE_URL}/search/{quote(keyword)}?type=video"
+            await page.goto(target_url, wait_until="domcontentloaded", timeout=30000)
+
+            deadline = asyncio.get_running_loop().time() + max(30, int(timeout_seconds or 120))
+            next_scroll_at = 0.0
+            while asyncio.get_running_loop().time() < deadline:
+                if len(captured_items) >= max(1, int(count or 10)):
+                    break
+                if page.is_closed():
+                    break
+                now = asyncio.get_running_loop().time()
+                if now >= next_scroll_at and captured_pages:
+                    try:
+                        await page.mouse.wheel(0, 1800)
+                    except Exception:
+                        pass
+                    next_scroll_at = now + 2.5
+                if captured_pages and not self._search_verify_detail_from_raw(captured_pages[-1]):
+                    if not captured_items:
+                        break
+                await page.wait_for_timeout(1000)
+
+            try:
+                browser_cookies = await context.cookies(self.BASE_URL)
+                self._sync_browser_cookies(browser_cookies)
+            except Exception as exc:
+                logger.debug("Sync browser search cookies skipped: %s", exc)
+
+            if context is not None:
+                await context.close()
+            elif browser is not None:
+                await browser.close()
+
+        raw = captured_pages[-1] if captured_pages else {}
+        if not captured_pages:
+            raw = {
+                "status_code": 0,
+                "search_nil_info": {
+                    "search_nil_type": "browser_verify_timeout",
+                    "search_nil_item": "browser_verify_timeout",
+                },
+            }
+        if offset > 0:
+            captured_items = captured_items[offset:]
+        items = captured_items[: max(1, int(count or 10))]
+        _raw_items, has_more, next_offset = self._normalize_search_response(raw)
+        if captured_items:
+            has_more = has_more or len(captured_items) > len(items)
+            next_offset = max(next_offset, offset + len(items))
         return {
             "items": items,
             "has_more": has_more,
             "max_cursor": next_offset,
-            "status_code": status_code,
+            "status_code": int(raw.get("status_code") or 0),
             "raw": raw,
+            "source": "browser",
         }
+
+    @staticmethod
+    def _search_verify_detail_from_raw(raw: Dict[str, Any]) -> str:
+        nil_info = raw.get("search_nil_info") if isinstance(raw, dict) else None
+        if not isinstance(nil_info, dict):
+            return ""
+        nil_type = str(nil_info.get("search_nil_type") or nil_info.get("search_nil_item") or "")
+        return nil_type
 
     async def get_aweme_comments(
         self,

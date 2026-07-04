@@ -623,6 +623,8 @@ def _search_verify_detail(page: Dict[str, Any]) -> str:
     nil_type = str(nil_info.get("search_nil_type") or nil_info.get("search_nil_item") or "")
     if nil_type == "verify_check":
         return "抖音搜索接口要求验证。请在设置里重新登录抖音，或在登录浏览器中打开抖音搜索完成验证后再试。"
+    if nil_type == "browser_verify_timeout":
+        return "浏览器搜索验证超时。请在弹出的抖音浏览器里完成验证码后重新搜索。"
     return ""
 
 
@@ -806,6 +808,7 @@ def build_app(config: ConfigLoader) -> FastAPI:
     login_manager = BrowserLoginManager(
         deps.cookie_manager,
         proxy=str(config.get("proxy") or ""),
+        profile_dir=str(_runtime_data_dir(config) / "browser_profile"),
     )
 
     @asynccontextmanager
@@ -1156,6 +1159,16 @@ def build_app(config: ConfigLoader) -> FastAPI:
                     sort_type=sort_type,
                     publish_time=publish_time,
                 )
+                verify_detail = _search_verify_detail(page)
+                if verify_detail and hasattr(api_client, "search_aweme_via_browser"):
+                    page = await api_client.search_aweme_via_browser(
+                        clean_keyword,
+                        offset=cursor,
+                        count=count,
+                        sort_type=sort_type,
+                        publish_time=publish_time,
+                        user_data_dir=str(_runtime_data_dir(config) / "browser_profile"),
+                    )
                 items = [
                     _compact_aweme(item)
                     for item in page.get("items") or []
