@@ -22,7 +22,6 @@ const VIEW_META = {
   following: { title: "我的关注", eyebrow: "账号内容" },
   collections: { title: "我的收藏", eyebrow: "账号内容" },
   preview: { title: "作者预览", eyebrow: "主页解析" },
-  search: { title: "关键词搜索", eyebrow: "发现作品" },
   batch: { title: "批量下载", eyebrow: "批量任务" },
   live: { title: "直播录制", eyebrow: "实验性功能" },
   tasks: { title: "任务中心", eyebrow: "下载队列" },
@@ -80,15 +79,6 @@ const state = {
     hasMore: false,
     loading: false,
     selected: new Set(),
-  },
-  search: {
-    items: [],
-    cursor: 0,
-    hasMore: false,
-    loading: false,
-    selected: new Set(),
-    keyword: "",
-    error: "",
   },
   liveJobId: "",
   archive: { total: 0, page: 1, items: [] },
@@ -197,6 +187,9 @@ function progressData(job) {
   const done = success + failed + skipped;
   const terminal = job.status === "success" || job.status === "failed" || job.status === "cancelled";
   if (total > 0) {
+    if (!terminal && done === 0) {
+      return { value: 36, label: `0/${total}`, indeterminate: true };
+    }
     const value = terminal ? 100 : Math.min(99, Math.max(2, Math.round((done / total) * 100)));
     return { value, label: `${done}/${total}`, indeterminate: false };
   }
@@ -894,7 +887,6 @@ async function downloadUsers(secUids, mode = selectedFollowDownloadMode()) {
     }
     toast(`已创建 ${valid.length} 个${WORK_MODE_LABELS[safeMode]}下载任务`);
     await refreshJobs();
-    showView("tasks");
   } catch (error) {
     toast(`创建失败：${error.message}`, "error");
   }
@@ -1084,111 +1076,6 @@ async function downloadWorkItems(items) {
 async function downloadSelectedWorks() {
   const selected = state.authorWorks.selected;
   const items = state.authorWorks.items.filter((item) => selected.has(`${item.type}:${item.id}`));
-  await downloadWorkItems(items);
-}
-
-function renderSearchResults(errorMessage = "") {
-  errorMessage = renderErrorText(errorMessage || state.search.error);
-  const list = $("#searchResults");
-  if (!list) return;
-  const count = state.search.items.length;
-  const selectedCount = state.search.selected.size;
-  $("#searchState").textContent = state.search.keyword
-    ? `关键词：${state.search.keyword} · 已加载 ${count} 个结果`
-    : "输入关键词后搜索作品，勾选需要下载的内容。";
-  $("#downloadSelectedSearchBtn").disabled = selectedCount === 0;
-  $("#loadMoreSearchBtn").disabled = state.search.loading || !state.search.hasMore;
-  $("#loadMoreSearchBtn").textContent = state.search.loading ? "加载中" : "加载更多";
-
-  if (errorMessage) {
-    list.innerHTML = `<div class="surface-panel placeholder-panel"><div class="placeholder-mark">⌕</div><h2>搜索失败</h2><p>${escapeHtml(errorMessage)}</p></div>`;
-    return;
-  }
-  if (!count) {
-    list.innerHTML = `<div class="surface-panel placeholder-panel"><div class="placeholder-mark">⌕</div><h2>${state.search.loading ? "搜索中" : "暂无搜索结果"}</h2></div>`;
-    return;
-  }
-
-  list.innerHTML = state.search.items.map((item) => {
-    const key = `${item.type}:${item.id}`;
-    return renderWorkCard(item, {
-      key,
-      selected: state.search.selected.has(key),
-      cardKeyAttr: "data-search-work-key",
-      selectAttr: "data-search-work-select",
-      downloadAttr: "data-download-search-work",
-      copyAttr: "data-copy-search-work",
-    });
-  }).join("");
-
-  $$("[data-search-work-select]", list).forEach((input) => {
-    input.addEventListener("change", () => {
-      if (input.checked) state.search.selected.add(input.dataset.searchWorkSelect);
-      else state.search.selected.delete(input.dataset.searchWorkSelect);
-      renderSearchResults();
-    });
-  });
-  $$("[data-download-search-work]", list).forEach((button) => {
-    button.addEventListener("click", () => {
-      const item = state.search.items.find((entry) => `${entry.type}:${entry.id}` === button.dataset.downloadSearchWork);
-      if (item) downloadWorkItems([item]);
-    });
-  });
-  $$("[data-copy-search-work]", list).forEach((button) => {
-    button.addEventListener("click", () => copyText(button.dataset.copySearchWork || ""));
-  });
-}
-
-async function runKeywordSearch({ reset = true } = {}) {
-  const keyword = $("#keywordInput").value.trim();
-  if (!keyword) {
-    toast("请输入关键词", "error");
-    return;
-  }
-  if (state.search.loading) return;
-  if (reset) {
-    state.search.items = [];
-    state.search.cursor = 0;
-    state.search.hasMore = false;
-    state.search.selected.clear();
-  }
-  state.search.keyword = keyword;
-  state.search.error = "";
-  state.search.loading = true;
-  renderSearchResults();
-  try {
-    const params = new URLSearchParams({
-      keyword,
-      cursor: String(reset ? 0 : state.search.cursor || 0),
-      count: String(Math.max(1, Math.min(50, Number($("#searchCount").value || 24)))),
-      sort_type: $("#searchSort").value,
-      publish_time: $("#searchPublishTime").value,
-    });
-    const result = await api(`/search?${params.toString()}`);
-    const seen = new Set(state.search.items.map((item) => `${item.type}:${item.id}`));
-    for (const item of result.items || []) {
-      const key = `${item.type}:${item.id}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        state.search.items.push(item);
-      }
-    }
-    state.search.cursor = Number(result.cursor || 0);
-    state.search.hasMore = Boolean(result.has_more) && state.search.cursor > 0;
-    state.search.error = "";
-  } catch (error) {
-    state.search.error = error.message;
-    toast(`搜索失败：${error.message}`, "error");
-    return;
-  } finally {
-    state.search.loading = false;
-    renderSearchResults();
-  }
-}
-
-async function downloadSelectedSearchResults() {
-  const selected = state.search.selected;
-  const items = state.search.items.filter((item) => selected.has(`${item.type}:${item.id}`));
   await downloadWorkItems(items);
 }
 
@@ -1570,7 +1457,6 @@ async function downloadCollection(item) {
     }
     toast("收藏下载任务已创建");
     await refreshJobs();
-    showView("tasks");
   } catch (error) {
     toast(`创建失败：${error.message}`, "error");
   }
@@ -1585,7 +1471,6 @@ async function downloadAllCollections(type) {
     await api("/download", { method: "POST", body: JSON.stringify(payload) });
     toast("收藏批量下载任务已创建");
     await refreshJobs();
-    showView("tasks");
   } catch (error) {
     toast(`创建失败：${error.message}`, "error");
   }
@@ -2009,7 +1894,6 @@ function showView(view) {
 
   if (view === "archive") refreshArchive();
   if (view === "preview") renderPreview();
-  if (view === "search") renderSearchResults();
   if (view === "live") {
     fillLiveFormFromConfig();
     renderLiveStatus();
@@ -2036,7 +1920,6 @@ async function refreshCurrentView() {
     else if (state.view === "collections") await syncCollections();
     else if (state.view === "preview" && state.authorWorks.visible) await loadAuthorWorks({ reset: true });
     else if (state.view === "preview") renderPreview();
-    else if (state.view === "search") renderSearchResults();
     else if (state.view === "live") {
       await refreshJobs();
       renderLiveStatus();
@@ -2071,18 +1954,6 @@ function bindEvents() {
     });
   }
   $("#resolveAuthorBtn").addEventListener("click", resolvePreviewAuthor);
-  $("#runSearchBtn").addEventListener("click", () => runKeywordSearch({ reset: true }));
-  $("#downloadSelectedSearchBtn").addEventListener("click", downloadSelectedSearchResults);
-  $("#loadMoreSearchBtn").addEventListener("click", () => runKeywordSearch({ reset: false }));
-  $("#keywordInput").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") runKeywordSearch({ reset: true });
-  });
-  $("#searchSort").addEventListener("change", () => {
-    if ($("#keywordInput").value.trim()) runKeywordSearch({ reset: true });
-  });
-  $("#searchPublishTime").addEventListener("change", () => {
-    if ($("#keywordInput").value.trim()) runKeywordSearch({ reset: true });
-  });
   $("#startBatchBtn").addEventListener("click", startBatch);
   $("#startLiveBtn").addEventListener("click", startLiveRecording);
   $("#stopLiveBtn").addEventListener("click", stopLiveRecording);
@@ -2166,7 +2037,6 @@ async function boot() {
     if (login.status === "running") startLoginPolling();
     await refreshJobs();
     renderPreview();
-    renderSearchResults();
     renderLiveStatus();
     renderFollowing();
     renderCollections();

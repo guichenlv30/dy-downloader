@@ -13,7 +13,7 @@ from config import ConfigLoader
 from control import QueueManager, RateLimiter, RetryHandler
 from core.api_client import DouyinAPIClient
 from core.live_downloader import LiveDownloader
-from storage import FileManager
+from storage import Database, FileManager
 
 
 class _FakeStreamResponse:
@@ -66,6 +66,12 @@ def _build_downloader(tmp_path):
         retry_handler=RetryHandler(max_retries=1),
         queue_manager=QueueManager(max_workers=1),
     ), api_client
+
+
+def _build_downloader_with_database(tmp_path):
+    downloader, api_client = _build_downloader(tmp_path)
+    downloader.database = Database(str(tmp_path / "dy_downloader.db"))
+    return downloader, api_client
 
 
 class _ProgressProbe:
@@ -164,6 +170,87 @@ async def test_live_downloader_records_stream(tmp_path, monkeypatch):
     assert len(flvs) == 1
     assert flvs[0].read_bytes() == b"abcdefghi"
 
+    await api_client.close()
+
+
+@pytest.mark.asyncio
+async def test_live_downloader_reports_recording_bytes(tmp_path):
+    downloader, api_client = _build_downloader(tmp_path)
+    reporter = _ProgressProbe()
+    downloader.progress_reporter = reporter
+
+    async def fake_get_live_room_info(room_id, *, sec_user_id=""):
+        return {
+            "room": {
+                "status": 2,
+                "title": "测试标题",
+                "stream_url": {
+                    "flv_pull_url": {"ORIGIN": "https://cdn/live.flv"},
+                },
+            },
+            "user": {"nickname": "主播甲"},
+        }
+
+    api_client.get_live_room_info = fake_get_live_room_info
+
+    async def fake_get_session():
+        return _FakeSession([b"a" * (2 * 1024 * 1024)])
+
+    api_client.get_session = fake_get_session
+
+    result = await downloader.download({"room_id": "42"})
+
+    assert result.success == 1
+    assert any(step == "录制直播流" and "已录制 2.0 MiB" in detail for step, detail in reporter.steps)
+    await api_client.close()
+
+
+@pytest.mark.asyncio
+async def test_live_downloader_records_archive_entry(tmp_path):
+    downloader, api_client = _build_downloader_with_database(tmp_path)
+    await downloader.database.initialize()
+    downloader.job_id = "job-live-1"
+
+    async def fake_get_live_room_info(room_id, *, sec_user_id=""):
+        return {
+            "room": {
+                "status": 2,
+                "title": "测试直播",
+                "stream_url": {
+                    "flv_pull_url": {"ORIGIN": "https://cdn/live.flv"},
+                },
+            },
+            "user": {
+                "uid": "anchor-1",
+                "sec_uid": "sec-anchor-1",
+                "nickname": "主播",
+                "avatar_thumb": {"url_list": ["https://img.example/avatar.jpg"]},
+            },
+        }
+
+    api_client.get_live_room_info = fake_get_live_room_info
+
+    async def fake_get_session():
+        return _FakeSession([b"abc", b"def"])
+
+    api_client.get_session = fake_get_session
+
+    result = await downloader.download({"room_id": "42"})
+
+    assert result.success == 1
+    history = await downloader.database.get_aweme_history(aweme_type="live")
+    assert history["total"] == 1
+    item = history["items"][0]
+    assert item["aweme_type"] == "live"
+    assert item["title"] == "测试直播"
+    assert item["author_name"] == "主播"
+    assert item["author_sec_uid"] == "sec-anchor-1"
+    assert item["job_id"] == "job-live-1"
+    assert item["file_path"].endswith(".flv")
+    assert Path(item["file_path"]).exists()
+    assert item["cover_urls"] == ["https://img.example/avatar.jpg"]
+
+    await downloader.database.close()
     await api_client.close()
 
 

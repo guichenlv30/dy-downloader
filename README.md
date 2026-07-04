@@ -44,7 +44,7 @@ A desktop GUI built on the same backend — paste a link to start, sync your fol
 | Highest-quality selection | Auto-picks highest bitrate from `video.bit_rate` ladder (video + live-photo) |
 | **Live stream recording** | `live.douyin.com/{room_id}` → FLV/HLS, preserves partial data on stream end |
 | **Comments collection** | Per-aweme comments (+ optional replies) saved as `*_comments.json` |
-| **Hot search + keyword search** | `--hot-board [N]` / `--search "keyword"` dumps to JSONL |
+| **Hot search snapshot** | `--hot-board [N]` dumps to JSONL |
 | **REST API server mode** | `--serve --serve-port 8000` (optional `fastapi + uvicorn`) |
 | **Notification push** | Bark / Telegram / Webhook on download completion |
 | Extra assets | Cover, music, avatar, JSON metadata |
@@ -179,8 +179,6 @@ python run.py -c config.yml \
 | `--show-warnings` | Show warning/error logs |
 | `-v, --verbose` | Show info/warning/error logs |
 | `--hot-board [N]` | Fetch Douyin hot search board and write JSONL; optional top-N |
-| `--search KEYWORD` | Search videos by keyword, write JSONL |
-| `--search-max N` | Max items for `--search` (default 50) |
 | `--serve` | Run as REST API server (requires `pip install fastapi uvicorn`) |
 | `--serve-host HOST` | REST server listen host (default 127.0.0.1) |
 | `--serve-port PORT` | REST server listen port (default 8000) |
@@ -307,13 +305,6 @@ Generates a `{date}_{title}_{aweme_id}_comments.json` next to the media file.
 ```bash
 python run.py --hot-board 30 -p ./Downloaded
 # Output: ./Downloaded/hot_board/20260424_221530.jsonl
-```
-
-### Search by keyword
-
-```bash
-python run.py --search "猫咪" --search-max 100 -p ./Downloaded
-# Output: ./Downloaded/search/猫咪_20260424_221530.jsonl
 ```
 
 ### Run as REST API server
@@ -453,8 +444,6 @@ workspace/
     ├── download_manifest.jsonl
     ├── hot_board/                # when --hot-board is used
     │   └── 20260424_221530.jsonl
-    ├── search/                   # when --search is used
-    │   └── 猫咪_20260424_221530.jsonl
     └── AuthorName/
         ├── post/
         │   └── 2024-02-07_Title_aweme_id/

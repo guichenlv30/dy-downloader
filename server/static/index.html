@@ -40,7 +40,6 @@
           <button class="nav-item" type="button" data-view="following"><span class="nav-icon">◎</span><span>我的关注</span></button>
           <button class="nav-item" type="button" data-view="collections"><span class="nav-icon">◇</span><span>我的收藏</span></button>
           <button class="nav-item" type="button" data-view="preview"><span class="nav-icon">▦</span><span>作者预览</span></button>
-          <button class="nav-item" type="button" data-view="search"><span class="nav-icon">⌕</span><span>关键词搜索</span></button>
 
           <div class="nav-group">本地</div>
           <button class="nav-item active" type="button" data-view="download"><span class="nav-icon">↓</span><span>下载</span></button>
@@ -178,38 +177,6 @@
             </div>
             <div id="authorWorksList" class="works-grid"></div>
           </section>
-        </section>
-
-        <section id="searchView" class="view" data-title="关键词搜索" data-eyebrow="发现作品">
-          <section class="surface-panel toolbar-panel">
-            <div class="panel-head">
-              <div>
-                <h2>关键词搜索</h2>
-                <p id="searchState">输入关键词后搜索作品，勾选需要下载的内容。</p>
-              </div>
-              <div class="button-cluster">
-                <button id="runSearchBtn" class="primary-button" type="button">搜索</button>
-                <button id="downloadSelectedSearchBtn" class="secondary-button" type="button" disabled>下载选中</button>
-              </div>
-            </div>
-            <div class="filter-row">
-              <input id="keywordInput" class="field-input" type="search" placeholder="输入关键词" />
-              <select id="searchSort" class="field-input select-field">
-                <option value="0">综合排序</option>
-                <option value="1">最多点赞</option>
-                <option value="2">最新发布</option>
-              </select>
-              <select id="searchPublishTime" class="field-input select-field">
-                <option value="0">不限时间</option>
-                <option value="1">一天内</option>
-                <option value="7">一周内</option>
-                <option value="182">半年内</option>
-              </select>
-              <input id="searchCount" class="field-input" type="number" min="1" max="50" value="24" />
-              <button id="loadMoreSearchBtn" class="secondary-button" type="button" disabled>加载更多</button>
-            </div>
-          </section>
-          <div id="searchResults" class="works-grid"></div>
         </section>
 
         <section id="liveView" class="view" data-title="直播录制" data-eyebrow="实验性功能">
@@ -449,6 +416,6 @@
     </div>
 
     <div id="toastHost" class="toast-host" aria-live="polite"></div>
-    <script src="/static/app.js?v=20260704-12" defer></script>
+    <script src="/static/app.js?v=20260704-13" defer></script>
   </body>
 </html>

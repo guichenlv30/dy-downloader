@@ -133,17 +133,44 @@ class LiveDownloader(BaseDownloader):
             f"quality={quality} | -> {target_path.name}",
         )
 
-        ok = await self._record_stream(
-            stream_url,
-            target_path,
-            max_duration=max_duration,
-            chunk_size=chunk_size,
-            idle_timeout=idle_timeout,
-        )
+        try:
+            ok = await self._record_stream(
+                stream_url,
+                target_path,
+                max_duration=max_duration,
+                chunk_size=chunk_size,
+                idle_timeout=idle_timeout,
+            )
+        except asyncio.CancelledError:
+            if target_path.exists():
+                await self._record_live_artifact(
+                    room_id=str(room_id),
+                    title=title,
+                    author_name=author_name,
+                    user=user,
+                    room=room,
+                    info=info,
+                    target_path=target_path,
+                    meta_path=meta_path,
+                    quality=quality,
+                )
+                self._progress_update_step("直播录制已停止", str(target_path))
+            raise
 
         if ok:
+            await self._record_live_artifact(
+                room_id=str(room_id),
+                title=title,
+                author_name=author_name,
+                user=user,
+                room=room,
+                info=info,
+                target_path=target_path,
+                meta_path=meta_path,
+                quality=quality,
+            )
             result.success += 1
-            self._progress_advance_item("success", str(room_id))
+            self._progress_advance_item("success", str(target_path))
             logger.info("Live recording finished: %s", target_path)
         else:
             result.failed += 1
@@ -191,6 +218,76 @@ class LiveDownloader(BaseDownloader):
             group_by_mode=self.config.get("group_by_mode", True),
         )
         return save_dir, file_stem
+
+    async def _record_live_artifact(
+        self,
+        *,
+        room_id: str,
+        title: str,
+        author_name: str,
+        user: Dict[str, Any],
+        room: Dict[str, Any],
+        info: Dict[str, Any],
+        target_path: Path,
+        meta_path: Path,
+        quality: str,
+    ) -> None:
+        if not self.database:
+            return
+
+        now_ts = int(datetime.now().timestamp())
+        live_record_id = f"live_{room_id}_{int(time.time() * 1000)}"
+        metadata = {
+            "room_id": room_id,
+            "title": title,
+            "quality": quality,
+            "media_path": str(target_path),
+            "meta_path": str(meta_path),
+            "room": room,
+            "user": user,
+            "raw": info,
+        }
+        avatar_urls = self._user_avatar_urls(user)
+        record = {
+            "aweme_id": live_record_id,
+            "aweme_type": "live",
+            "title": title,
+            "author_id": user.get("uid") or user.get("id") or "",
+            "author_name": author_name,
+            "author_sec_uid": user.get("sec_uid") or user.get("sec_user_id") or "",
+            "create_time": now_ts,
+            "file_path": str(target_path),
+            "metadata": json.dumps(metadata, ensure_ascii=False),
+            "cover_urls": json.dumps(avatar_urls, ensure_ascii=False),
+            "job_id": self.job_id or "",
+        }
+        await self.database.add_aweme(record)
+        await self.metadata_handler.append_download_manifest(
+            self.file_manager.base_path,
+            {
+                "date": datetime.now().strftime("%Y-%m-%d"),
+                "aweme_id": live_record_id,
+                "author_name": author_name,
+                "desc": title,
+                "media_type": "live",
+                "file_names": [target_path.name, meta_path.name],
+                "file_paths": [
+                    self._to_manifest_path(target_path),
+                    self._to_manifest_path(meta_path),
+                ],
+            },
+        )
+
+    @staticmethod
+    def _user_avatar_urls(user: Dict[str, Any]) -> list[str]:
+        for key in ("avatar_thumb", "avatar_medium", "avatar_larger"):
+            avatar = user.get(key)
+            if not isinstance(avatar, dict):
+                continue
+            urls = avatar.get("url_list")
+            if isinstance(urls, list):
+                return [url for url in urls if isinstance(url, str) and url]
+        return []
 
     @staticmethod
     def _select_best_stream_url(room: Dict[str, Any]) -> Tuple[Optional[str], str]:
@@ -249,6 +346,8 @@ class LiveDownloader(BaseDownloader):
         start = time.monotonic()
         bytes_written = 0
         last_chunk_ts = start
+        last_progress_ts = start
+        last_progress_bytes = 0
 
         # 直播 CDN 常同时校验 Referer 与 Origin 为 live.douyin.com（不是 www.douyin.com）。
         headers = self._download_headers()
@@ -296,6 +395,17 @@ class LiveDownloader(BaseDownloader):
                         bytes_written += len(chunk)
                         now = time.monotonic()
                         last_chunk_ts = now
+                        if (
+                            now - last_progress_ts >= 1.0
+                            or bytes_written - last_progress_bytes >= 2 * 1024 * 1024
+                        ):
+                            elapsed = max(0.0, now - start)
+                            self._progress_update_step(
+                                "录制直播流",
+                                f"已录制 {bytes_written / (1024 * 1024):.1f} MiB · {elapsed:.0f}s",
+                            )
+                            last_progress_ts = now
+                            last_progress_bytes = bytes_written
                         if max_duration and (now - start) >= max_duration:
                             logger.info(
                                 "Live max_duration reached (%.1fs), stopping.",

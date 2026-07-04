@@ -186,11 +186,11 @@ async def main_async(args):
     else:
         config_path = "config.yml"
 
-    # 若 config 不存在且使用了 --hot-board / --search / --serve 等独立子命令，
+    # 若 config 不存在且使用了 --hot-board / --serve 等独立子命令，
     # 允许以默认配置运行（只要命令行提供了 --path）。
     if not Path(config_path).exists():
         can_run_with_defaults = bool(
-            args.hot_board is not None or args.search or args.serve or args.url
+            args.hot_board is not None or args.serve or args.url
         )
         # For serve and URL-driven runs, keep the missing config path so a
         # first-run config.yml can be created beside the project/userData.
@@ -212,8 +212,8 @@ async def main_async(args):
     if args.path:
         config.update(path=args.path)
 
-    # 独立子命令：热榜 / 搜索 / 服务
-    if args.hot_board is not None or args.search:
+    # 独立子命令：热榜 / 服务
+    if args.hot_board is not None:
         discovery_cm = CookieManager()
         discovery_cm.set_cookies(config.get_cookies())
         await _run_with_relogin(
@@ -315,8 +315,8 @@ async def main_async(args):
 async def _run_discovery_subcommand(
     args, config: ConfigLoader, cookie_manager: CookieManager
 ) -> None:
-    """处理 --hot-board 与 --search 子命令。"""
-    from core.discovery import dump_hot_board, search_and_dump
+    """处理 --hot-board 子命令。"""
+    from core.discovery import dump_hot_board
 
     base_path = Path(config.get("path") or "./Downloaded/")
 
@@ -328,15 +328,6 @@ async def _run_discovery_subcommand(
             display.print_info("拉取抖音热搜榜...")
             result = await dump_hot_board(api_client, base_path, limit=int(args.hot_board or 0))
             display.print_success(f"热榜已保存：{result['count']} 条 -> {result['path']}")
-        if args.search:
-            display.print_info(f"搜索关键词：{args.search}")
-            result = await search_and_dump(
-                api_client,
-                args.search,
-                base_path,
-                max_items=int(args.search_max or 50),
-            )
-            display.print_success(f"搜索结果已保存：{result['count']} 条 -> {result['path']}")
 
 
 async def _run_serve_subcommand(args, config: ConfigLoader) -> None:
@@ -402,19 +393,6 @@ def main():
         default=None,
         metavar="N",
         help="拉取抖音热搜榜并导出 JSONL，可选上限 N（默认全部）",
-    )
-    parser.add_argument(
-        "--search",
-        type=str,
-        default=None,
-        metavar="KEYWORD",
-        help="按关键词搜索作品并导出 JSONL",
-    )
-    parser.add_argument(
-        "--search-max",
-        type=int,
-        default=50,
-        help="--search 场景下最多拉取条数（默认 50）",
     )
     parser.add_argument(
         "--serve",

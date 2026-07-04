@@ -40,7 +40,7 @@
 | 鏈€楂樻竻鑷姩鎸戦€?| 鍩轰簬 `video.bit_rate` 鏁扮粍鑷姩閫夋渶楂樼爜鐜囷紙瑙嗛 + 瀹炲喌鍥剧敓鏁堬級 |
 | **鐩存挱褰曞埗** | `live.douyin.com/{room_id}` 鈫?FLV/HLS锛屼富鎾笅鎾椂淇濈暀宸插綍鏁版嵁 |
 | **璇勮閲囬泦** | 鎸変綔鍝佹姄璇勮锛堝彲鍚簩绾у洖澶嶏級锛岃緭鍑?`*_comments.json` |
-| **鐑悳姒?+ 鍏抽敭璇嶆悳绱?* | `--hot-board [N]` / `--search "鍏抽敭璇?`锛岀粨鏋滆惤 JSONL |
+| **鐑悳姒滃揩鐓?* | `--hot-board [N]`锛岀粨鏋滆惤 JSONL |
 | **REST API 鏈嶅姟妯″紡** | `--serve --serve-port 8000`锛堝彲閫?`fastapi + uvicorn`锛?|
 | **瀹屾垚閫氱煡鎺ㄩ€?* | 涓嬭浇瀹屾垚鍚庢帹 Bark / Telegram / Webhook |
 | 闄勫姞璧勬簮涓嬭浇 | 灏侀潰銆侀煶涔愩€佸ご鍍忋€丣SON 鍏冩暟鎹?|
@@ -177,8 +177,6 @@ python run.py -c config.yml \
 | `--show-warnings` | 鏄剧ず warning/error 鏃ュ織 |
 | `-v, --verbose` | 鏄剧ず info/warning/error 鏃ュ織 |
 | `--hot-board [N]` | 鎷夊彇鎶栭煶鐑悳姒滃苟瀵煎嚭 JSONL锛屽彲閫変笂闄?N |
-| `--search KEYWORD` | 鎸夊叧閿瘝鎼滅储浣滃搧骞跺鍑?JSONL |
-| `--search-max N` | `--search` 鍦烘櫙涓嬫渶澶氭媺鍙栨潯鏁帮紙榛樿 50锛?|
 | `--serve` | 浠?REST API 鏈嶅姟妯″紡杩愯锛堥渶瑕?`pip install fastapi uvicorn`锛?|
 | `--serve-host HOST` | REST 鏈嶅姟鐩戝惉鍦板潃锛堥粯璁?127.0.0.1锛?|
 | `--serve-port PORT` | REST 鏈嶅姟鐩戝惉绔彛锛堥粯璁?8000锛?|
@@ -303,13 +301,6 @@ comments:
 ```bash
 python run.py --hot-board 30 -p ./Downloaded
 # 杈撳嚭锛?/Downloaded/hot_board/20260424_221530.jsonl
-```
-
-### 鍏抽敭璇嶆悳绱?
-
-```bash
-python run.py --search "鐚挭" --search-max 100 -p ./Downloaded
-# 杈撳嚭锛?/Downloaded/search/鐚挭_20260424_221530.jsonl
 ```
 
 ### 浠?REST API 鏈嶅姟妯″紡杩愯
@@ -472,8 +463,6 @@ Downloaded/
 鈹溾攢鈹€ dy_downloader.db          # database: true 鏃剁敓鎴?
 鈹溾攢鈹€ hot_board/                # 浣跨敤 --hot-board 鏃剁敓鎴?
 鈹?  鈹斺攢鈹€ 20260424_221530.jsonl
-鈹溾攢鈹€ search/                   # 浣跨敤 --search 鏃剁敓鎴?
-鈹?  鈹斺攢鈹€ 鐚挭_20260424_221530.jsonl
 鈹斺攢鈹€ 浣滆€呭悕/
     鈹溾攢鈹€ post/
     鈹?  鈹斺攢鈹€ 2024-02-07_浣滃搧鏍囬_aweme_id/

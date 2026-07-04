@@ -613,21 +613,6 @@ def _download_overrides(req: DownloadRequest) -> Dict[str, Any]:
     return overrides
 
 
-def _search_verify_detail(page: Dict[str, Any]) -> str:
-    raw = page.get("raw") if isinstance(page, dict) else {}
-    if not isinstance(raw, dict):
-        return ""
-    nil_info = raw.get("search_nil_info")
-    if not isinstance(nil_info, dict):
-        return ""
-    nil_type = str(nil_info.get("search_nil_type") or nil_info.get("search_nil_item") or "")
-    if nil_type == "verify_check":
-        return "抖音搜索接口要求验证。请在设置里重新登录抖音，或在登录浏览器中打开抖音搜索完成验证后再试。"
-    if nil_type == "browser_verify_timeout":
-        return "浏览器搜索验证超时。请在弹出的抖音浏览器里完成验证码后重新搜索。"
-    return ""
-
-
 def _config_for_job(config: ConfigLoader, overrides: Optional[Dict[str, Any]]) -> ConfigLoader:
     runtime_config = ConfigLoader(config.config_path)
     runtime_config.config = deepcopy(config.config)
@@ -1132,62 +1117,6 @@ def build_app(config: ConfigLoader) -> FastAPI:
         return {
             "collection_type": collection_type,
             "collection_id": collection_id,
-            "items": items,
-            "has_more": bool(page.get("has_more")),
-            "cursor": int(page.get("max_cursor") or 0),
-        }
-
-    @app.get("/api/v1/search")
-    async def keyword_search(
-        keyword: str = Query(..., min_length=1),
-        cursor: int = Query(0, ge=0),
-        count: int = Query(24, ge=1, le=50),
-        sort_type: int = Query(0, ge=0, le=2),
-        publish_time: int = Query(0, ge=0),
-    ) -> Dict[str, Any]:
-        cookies = _require_login_cookies(deps)
-        clean_keyword = keyword.strip()
-        if not clean_keyword:
-            raise HTTPException(status_code=400, detail="keyword is required")
-
-        try:
-            async with DouyinAPIClient(cookies, proxy=deps.config.get("proxy")) as api_client:
-                page = await api_client.search_aweme(
-                    clean_keyword,
-                    offset=cursor,
-                    count=count,
-                    sort_type=sort_type,
-                    publish_time=publish_time,
-                )
-                verify_detail = _search_verify_detail(page)
-                if verify_detail and hasattr(api_client, "search_aweme_via_browser"):
-                    page = await api_client.search_aweme_via_browser(
-                        clean_keyword,
-                        offset=cursor,
-                        count=count,
-                        sort_type=sort_type,
-                        publish_time=publish_time,
-                        user_data_dir=str(_runtime_data_dir(config) / "browser_profile"),
-                    )
-                items = [
-                    _compact_aweme(item)
-                    for item in page.get("items") or []
-                    if isinstance(item, dict) and (item.get("aweme_id") or item.get("group_id"))
-                ]
-        except HTTPException:
-            raise
-        except LoginRequiredError as exc:
-            raise HTTPException(status_code=401, detail=str(exc)) from exc
-        except Exception as exc:
-            raise HTTPException(status_code=502, detail=f"search failed: {exc}") from exc
-
-        verify_detail = _search_verify_detail(page)
-        if verify_detail:
-            raise HTTPException(status_code=403, detail=verify_detail)
-
-        items = await _annotate_download_states(config, items)
-        return {
-            "keyword": clean_keyword,
             "items": items,
             "has_more": bool(page.get("has_more")),
             "cursor": int(page.get("max_cursor") or 0),
