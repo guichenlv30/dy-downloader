@@ -99,7 +99,7 @@ class AuthorResolveRequest(BaseModel):
 ALLOWED_MODES = {"post", "like", "mix", "music", "collect", "collectmix"}
 ALLOWED_AUTHOR_DIRS = {"nickname", "sec_uid", "nickname_uid", "user_sec_uid"}
 URL_IN_TEXT_RE = re.compile(
-    r"https?://(?:v\.douyin\.com|www\.douyin\.com|live\.douyin\.com|v\.iesdouyin\.com)/[^\s，。；;、]+",
+    r"https?://(?:v\.douyin\.com|www\.douyin\.com|live\.douyin\.com|v\.iesdouyin\.com|webcast\.amemv\.com)/[^\s，。；;、]+",
     re.IGNORECASE,
 )
 GENERIC_URL_RE = re.compile(r"https?://[^\s，。；;、]+", re.IGNORECASE)
@@ -611,6 +611,19 @@ def _download_overrides(req: DownloadRequest) -> Dict[str, Any]:
         if current_live:
             overrides["live"] = current_live
     return overrides
+
+
+def _search_verify_detail(page: Dict[str, Any]) -> str:
+    raw = page.get("raw") if isinstance(page, dict) else {}
+    if not isinstance(raw, dict):
+        return ""
+    nil_info = raw.get("search_nil_info")
+    if not isinstance(nil_info, dict):
+        return ""
+    nil_type = str(nil_info.get("search_nil_type") or nil_info.get("search_nil_item") or "")
+    if nil_type == "verify_check":
+        return "抖音搜索接口要求验证。请在设置里重新登录抖音，或在登录浏览器中打开抖音搜索完成验证后再试。"
+    return ""
 
 
 def _config_for_job(config: ConfigLoader, overrides: Optional[Dict[str, Any]]) -> ConfigLoader:
@@ -1154,6 +1167,10 @@ def build_app(config: ConfigLoader) -> FastAPI:
             raise HTTPException(status_code=401, detail=str(exc)) from exc
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"search failed: {exc}") from exc
+
+        verify_detail = _search_verify_detail(page)
+        if verify_detail:
+            raise HTTPException(status_code=403, detail=verify_detail)
 
         items = await _annotate_download_states(config, items)
         return {

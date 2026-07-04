@@ -74,6 +74,8 @@ def parse_url_type(url: str) -> Optional[str]:
     # live.douyin.com/{room_id} — 直播间专用子域，path 仅有一段数字。
     if host.startswith("live.douyin.com"):
         return "live"
+    if host.startswith("webcast.amemv.com") and "/douyin/webcast/reflow/" in path:
+        return "live"
 
     if "/video/" in path:
         return "video"

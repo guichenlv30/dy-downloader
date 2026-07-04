@@ -68,6 +68,22 @@ def _build_downloader(tmp_path):
     ), api_client
 
 
+class _ProgressProbe:
+    def __init__(self):
+        self.steps = []
+        self.advanced = []
+
+    def set_item_total(self, total, detail=""):
+        self.total = total
+        self.total_detail = detail
+
+    def update_step(self, step, detail=""):
+        self.steps.append((step, detail))
+
+    def advance_item(self, status, detail=""):
+        self.advanced.append((status, detail))
+
+
 def test_select_best_stream_url_prefers_flv_origin():
     room = {
         "stream_url": {
@@ -174,6 +190,42 @@ async def test_live_downloader_fails_when_room_missing(tmp_path):
     api_client.get_live_room_info = fake_info
     result = await downloader.download({"room_id": "42"})
     assert result.failed == 1
+    await api_client.close()
+
+
+@pytest.mark.asyncio
+async def test_live_downloader_passes_sec_user_id(tmp_path):
+    downloader, api_client = _build_downloader(tmp_path)
+    captured = {}
+
+    async def fake_info(room_id, *, sec_user_id=""):
+        captured["room_id"] = room_id
+        captured["sec_user_id"] = sec_user_id
+        return {"room": {}, "user": {}, "unavailable_reason": "不可用"}
+
+    api_client.get_live_room_info = fake_info
+    result = await downloader.download({"room_id": "42", "sec_user_id": "sec-42"})
+
+    assert captured == {"room_id": "42", "sec_user_id": "sec-42"}
+    assert result.failed == 1
+    await api_client.close()
+
+
+@pytest.mark.asyncio
+async def test_live_downloader_reports_unavailable_reason(tmp_path):
+    downloader, api_client = _build_downloader(tmp_path)
+    reporter = _ProgressProbe()
+    downloader.progress_reporter = reporter
+
+    async def fake_info(room_id, *, sec_user_id=""):
+        return {"room": {}, "user": {}, "unavailable_reason": "该内容暂时无法查看"}
+
+    api_client.get_live_room_info = fake_info
+    result = await downloader.download({"room_id": "42"})
+
+    assert result.failed == 1
+    assert ("直播间不可用", "该内容暂时无法查看") in reporter.steps
+    assert reporter.advanced[-1] == ("failed", "该内容暂时无法查看")
     await api_client.close()
 
 

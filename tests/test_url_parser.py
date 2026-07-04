@@ -76,3 +76,12 @@ def test_parse_live_url():
     assert parsed is not None
     assert parsed["type"] == "live"
     assert parsed["room_id"] == "987654321"
+
+    parsed = URLParser.parse(
+        "https://webcast.amemv.com/douyin/webcast/reflow/7658536313678990131"
+        "?sec_user_id=MS4wLjABAAAAysAX&share_platform=copy"
+    )
+    assert parsed is not None
+    assert parsed["type"] == "live"
+    assert parsed["room_id"] == "7658536313678990131"
+    assert parsed["sec_user_id"] == "MS4wLjABAAAAysAX"

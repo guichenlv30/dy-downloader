@@ -359,6 +359,48 @@ async def test_resolve_short_url_returns_none_on_500():
 
 
 @pytest.mark.asyncio
+async def test_get_live_room_info_uses_live_domain():
+    client = DouyinAPIClient({"msToken": "t"})
+    captured = {}
+
+    async def _fake_request_json(path, params, **kwargs):
+        captured["path"] = path
+        captured["params"] = params
+        captured["kwargs"] = kwargs
+        return {
+            "data": {
+                "room": {"status": 2, "stream_url": {}},
+                "user": {"nickname": "主播"},
+            }
+        }
+
+    client._request_json = _fake_request_json
+
+    info = await client.get_live_room_info("765", sec_user_id="sec-1")
+
+    assert info["room"]["status"] == 2
+    assert captured["path"] == "/webcast/room/web/enter/"
+    assert captured["params"]["room_id_str"] == "765"
+    assert captured["params"]["sec_user_id"] == "sec-1"
+    assert captured["kwargs"]["base_url"] == "https://live.douyin.com"
+
+
+@pytest.mark.asyncio
+async def test_get_live_room_info_returns_unavailable_reason():
+    client = DouyinAPIClient({"msToken": "t"})
+
+    async def _fake_request_json(path, params, **kwargs):
+        return {"status_code": 4001038, "data": {"prompts": "该内容暂时无法查看"}}
+
+    client._request_json = _fake_request_json
+
+    info = await client.get_live_room_info("765")
+
+    assert info["room"] == {}
+    assert info["unavailable_reason"] == "该内容暂时无法查看"
+
+
+@pytest.mark.asyncio
 async def test_get_video_detail_retries_with_different_aid_on_filter():
     """When the first aid candidate returns filter_reason, get_video_detail
     should retry with the next candidate and return the detail."""

@@ -175,13 +175,19 @@ class DouyinAPIClient:
         signed_url, _xbogus, ua = self._signer.build(url)
         return signed_url, ua
 
-    def build_signed_path(self, path: str, params: Dict[str, Any]) -> Tuple[str, str]:
+    def build_signed_path(
+        self,
+        path: str,
+        params: Dict[str, Any],
+        *,
+        base_url: Optional[str] = None,
+    ) -> Tuple[str, str]:
         query = urlencode(params)
-        base_url = f"{self.BASE_URL}{path}"
-        ab_signed = self._build_abogus_url(base_url, query)
+        request_base_url = f"{base_url or self.BASE_URL}{path}"
+        ab_signed = self._build_abogus_url(request_base_url, query)
         if ab_signed:
             return ab_signed
-        return self.sign_url(f"{base_url}?{query}")
+        return self.sign_url(f"{request_base_url}?{query}")
 
     def _build_abogus_url(self, base_url: str, query: str) -> Optional[Tuple[str, str]]:
         if not self._abogus_enabled:
@@ -203,13 +209,17 @@ class DouyinAPIClient:
         *,
         suppress_error: bool = False,
         max_retries: int = 3,
+        base_url: Optional[str] = None,
     ) -> Dict[str, Any]:
         await self._ensure_session()
         delays = [1, 2, 5]
         last_exc: Optional[Exception] = None
 
         for attempt in range(max_retries):
-            signed_url, ua = self.build_signed_path(path, params)
+            if base_url:
+                signed_url, ua = self.build_signed_path(path, params, base_url=base_url)
+            else:
+                signed_url, ua = self.build_signed_path(path, params)
             try:
                 async with self._session.get(
                     signed_url,
@@ -609,6 +619,7 @@ class DouyinAPIClient:
             "/webcast/room/web/enter/",
             params,
             suppress_error=True,
+            base_url="https://live.douyin.com",
         )
         if not raw:
             return None
@@ -629,7 +640,21 @@ class DouyinAPIClient:
             room = raw.get("room")
 
         if not isinstance(room, dict):
-            return None
+            reason = ""
+            if isinstance(data_section, dict):
+                reason = str(
+                    data_section.get("prompts")
+                    or data_section.get("message")
+                    or data_section.get("status_msg")
+                    or raw.get("status_msg")
+                    or ""
+                )
+            return {
+                "room": {},
+                "user": {},
+                "raw": raw,
+                "unavailable_reason": reason or "live room info unavailable",
+            }
 
         user = data_section.get("user") if isinstance(data_section, dict) else None
         return {

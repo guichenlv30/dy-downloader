@@ -1,5 +1,6 @@
 import re
 from typing import Any, Dict, Optional
+from urllib.parse import parse_qs, urlparse
 
 from utils.logger import setup_logger
 from utils.validators import parse_url_type
@@ -50,6 +51,9 @@ class URLParser:
             room_id = URLParser._extract_room_id(url)
             if room_id:
                 result["room_id"] = room_id
+            sec_user_id = URLParser._extract_sec_user_id(url)
+            if sec_user_id:
+                result["sec_user_id"] = sec_user_id
 
         return result
 
@@ -106,4 +110,13 @@ class URLParser:
         match = re.search(r"live\.douyin\.com/(\d+)", url)
         if match:
             return match.group(1)
+        match = re.search(r"/douyin/webcast/reflow/(\d+)", url)
+        if match:
+            return match.group(1)
         return None
+
+    @staticmethod
+    def _extract_sec_user_id(url: str) -> Optional[str]:
+        query = parse_qs(urlparse(url).query)
+        values = query.get("sec_user_id") or []
+        return values[0] if values else None

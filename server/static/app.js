@@ -2,10 +2,10 @@
 
 const API = "/api/v1";
 const DOUYIN_URL_RE =
-  /https?:\/\/(?:v\.douyin\.com|www\.douyin\.com|live\.douyin\.com|v\.iesdouyin\.com)\/[^\s，。；;、]+/i;
+  /https?:\/\/(?:v\.douyin\.com|www\.douyin\.com|live\.douyin\.com|v\.iesdouyin\.com|webcast\.amemv\.com)\/[^\s，。；;、]+/i;
 const GENERIC_URL_RE = /https?:\/\/[^\s，。；;、]+/i;
 const DOUYIN_URL_GLOBAL_RE =
-  /https?:\/\/(?:v\.douyin\.com|www\.douyin\.com|live\.douyin\.com|v\.iesdouyin\.com)\/[^\s，。；;、]+/gi;
+  /https?:\/\/(?:v\.douyin\.com|www\.douyin\.com|live\.douyin\.com|v\.iesdouyin\.com|webcast\.amemv\.com)\/[^\s，。；;、]+/gi;
 const GENERIC_URL_GLOBAL_RE = /https?:\/\/[^\s，。；;、]+/gi;
 
 const MODES = [
@@ -1209,6 +1209,12 @@ function fillLiveFormFromConfig() {
   if ($("#liveIdleTimeout")) $("#liveIdleTimeout").value = live.idle_timeout_seconds ?? 30;
 }
 
+function isLiveJob(job) {
+  if (!job) return false;
+  if (job.overrides?.live) return true;
+  return /live\.douyin\.com|\/follow\/live\/|webcast\.amemv\.com/.test(job.url || "");
+}
+
 function renderLiveStatus() {
   const badge = $("#liveBadge");
   const result = $("#liveResult");
@@ -1216,7 +1222,7 @@ function renderLiveStatus() {
   if (!badge || !result || !stopBtn) return;
   const liveJob =
     state.jobs.find((job) => job.job_id === state.liveJobId) ||
-    state.jobs.find((job) => /live\.douyin\.com|\/follow\/live\//.test(job.url || ""));
+    state.jobs.find((job) => isLiveJob(job));
   const running = liveJob && ["pending", "running"].includes(liveJob.status);
   stopBtn.disabled = !running;
   if (!liveJob) {
@@ -1269,7 +1275,7 @@ async function startLiveRecording() {
 async function stopLiveRecording() {
   const liveJob =
     state.jobs.find((job) => job.job_id === state.liveJobId) ||
-    state.jobs.find((job) => /live\.douyin\.com|\/follow\/live\//.test(job.url || ""));
+    state.jobs.find((job) => isLiveJob(job));
   if (!liveJob) return;
   try {
     await api(`/jobs/${liveJob.job_id}`, { method: "DELETE" });

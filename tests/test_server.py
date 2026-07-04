@@ -814,6 +814,52 @@ def test_keyword_search_endpoint(tmp_path, monkeypatch):
         assert data["items"][0]["download_state"]["status"] == "none"
 
 
+def test_keyword_search_verify_check_returns_actionable_error(tmp_path, monkeypatch):
+    config = make_config(
+        tmp_path,
+        cookies={
+            "ttwid": "ttwid",
+            "odin_tt": "odin",
+            "passport_csrf_token": "csrf",
+            "sessionid": "session",
+        },
+    )
+
+    class FakeAPI:
+        def __init__(self, cookies, proxy=None):
+            self.cookies = cookies
+            self.proxy = proxy
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def search_aweme(self, *args, **kwargs):
+            return {
+                "items": [],
+                "has_more": False,
+                "max_cursor": 0,
+                "raw": {
+                    "status_code": 0,
+                    "data": [],
+                    "search_nil_info": {
+                        "search_nil_type": "verify_check",
+                        "search_nil_item": "verify_check",
+                    },
+                },
+            }
+
+    monkeypatch.setattr("server.app.DouyinAPIClient", FakeAPI)
+    app = build_app(config)
+
+    with TestClient(app) as client:
+        resp = client.get("/api/v1/search?keyword=洛克王国")
+        assert resp.status_code == 403
+        assert "抖音搜索接口要求验证" in resp.json()["detail"]
+
+
 def test_config_endpoint_updates_comments_and_live_settings(tmp_path):
     config = make_config(
         tmp_path,
