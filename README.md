@@ -1,8 +1,4 @@
-# Douyin Downloader V2.0
-
-<p align="center">
-  <img src="https://socialify.git.ci/jiji262/douyin-downloader/image?custom_description=Douyin+batch+download+tool%2C+remove+watermarks%2C+support+batch+download+of+videos%2C+gallery%2C+and+author+homepages.&description=1&font=Source+Code+Pro&forks=1&owner=1&pattern=Circuit+Board&stargazers=1&theme=Light" alt="douyin-downloader" width="820" />
-</p>
+# dy-downloader
 
 <p align="center">
     <a href="https://linux.do" alt="LINUX DO">
@@ -14,11 +10,9 @@
 
 A practical Douyin downloader supporting videos, image-notes, collections, music, favorites collections, and profile batch downloads, with progress display, retries, SQLite deduplication, download integrity checks, and browser fallback support.
 
-## Desktop App (Douzy)
+## Web App (Douzy)
 
 A desktop GUI built on the same backend — paste a link to start, sync your following list, and track downloads visually.
-
-> **Beta:** The desktop app is currently in closed beta. To try it, download the build from the [Releases](https://github.com/jiji262/douyin-downloader/releases) page.
 
 <table>
   <tr>
@@ -97,25 +91,23 @@ pip install playwright
 python -m playwright install chromium
 ```
 
-### 3) Copy config file
+### 3) Start the web UI
 
 ```bash
-cp config.example.yml config.yml
+python run.py --serve --serve-host 127.0.0.1 --serve-port 8000
 ```
 
-### 4) Get cookies (recommended: automatic)
+On first run, `config.yml`, `data/`, `data/dy_downloader.db`, download folders, and logs are generated automatically. Cookies are not generated until you log in.
 
-```bash
-python -m tools.cookie_fetcher --config config.yml
-```
+### 4) Log in
 
-After logging into Douyin, return to the terminal and press Enter. Cookies will be written to your config automatically.
+Open `http://127.0.0.1:8000`, click the login button, complete Douyin login in the opened browser, and cookies will be saved to the ignored runtime cookie file automatically.
 
 ### 5) Docker deployment (optional)
 
 ```bash
-docker build -t douyin-downloader .
-docker run -v $(pwd)/config.yml:/app/config.yml -v $(pwd)/Downloaded:/app/Downloaded douyin-downloader
+docker build -t dy-downloader .
+docker run -v $(pwd)/data:/app/data dy-downloader
 ```
 
 ## Minimal Working Config
@@ -124,7 +116,7 @@ docker run -v $(pwd)/config.yml:/app/config.yml -v $(pwd)/Downloaded:/app/Downlo
 link:
   - https://www.douyin.com/user/MS4wLjABAAAAxxxx
 
-path: ./Downloaded/
+path: ./data/Downloaded/
 mode:
   - post
 
@@ -137,17 +129,10 @@ thread: 5
 retry_times: 3
 proxy: ""
 database: true
-database_path: dy_downloader.db
+database_path: ./data/dy_downloader.db
 
 progress:
   quiet_logs: true
-
-cookies:
-  msToken: ""
-  ttwid: YOUR_TTWID
-  odin_tt: YOUR_ODIN_TT
-  passport_csrf_token: YOUR_CSRF_TOKEN
-  sid_guard: ""
 
 browser_fallback:
   enabled: true
@@ -508,14 +493,14 @@ The program uses a **database record + local file** dual check to decide whether
 rm -rf Downloaded/AuthorName/post/*_<aweme_id>/
 
 # Delete database record
-sqlite3 dy_downloader.db "DELETE FROM aweme WHERE aweme_id = '<aweme_id>';"
+sqlite3 data/dy_downloader.db "DELETE FROM aweme WHERE aweme_id = '<aweme_id>';"
 ```
 
 ### Re-download all items from a specific author
 
 ```bash
 rm -rf Downloaded/AuthorName/
-sqlite3 dy_downloader.db "DELETE FROM aweme WHERE author_name = 'AuthorName';"
+sqlite3 data/dy_downloader.db "DELETE FROM aweme WHERE author_name = 'AuthorName';"
 ```
 
 ### Full reset (re-download everything)
@@ -544,11 +529,7 @@ Use `--show-warnings` or `-v` temporarily when debugging.
 
 ### 3) What if cookies are expired?
 
-Run:
-
-```bash
-python -m tools.cookie_fetcher --config config.yml
-```
+Open the web UI, go to Settings, clear the login state, and log in again. The refreshed cookies are written to the ignored runtime cookie file automatically.
 
 ### 4) Why are transcript files not generated?
 
@@ -562,14 +543,8 @@ Check in order:
 ### 5) How to view download history?
 
 ```bash
-sqlite3 dy_downloader.db "SELECT aweme_id, title, author_name, datetime(download_time, 'unixepoch', 'localtime') FROM aweme ORDER BY download_time DESC LIMIT 20;"
+sqlite3 data/dy_downloader.db "SELECT aweme_id, title, author_name, datetime(download_time, 'unixepoch', 'localtime') FROM aweme ORDER BY download_time DESC LIMIT 20;"
 ```
-
-## Community Group
-
-<img src="./img/fuye.jpg" alt="qun" width="240" />
-
-点击链接加入群聊【QQ群】：[https://qm.qq.com/q/9xoNt8Wzv4](https://qm.qq.com/q/9xoNt8Wzv4)
 
 ## Disclaimer
 

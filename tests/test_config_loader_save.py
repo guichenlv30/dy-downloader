@@ -103,3 +103,35 @@ def test_save_nested_sub_models(tmp_path):
     assert written["comments"]["max_comments"] == 100
     assert written["notifications"]["enabled"] is True
     assert written["notifications"]["providers"] == [{"type": "bark", "url": "https://x"}]
+
+
+def test_ensure_file_writes_safe_first_run_config(tmp_path):
+    config_path = tmp_path / "config.yml"
+
+    loader = ConfigLoader(str(config_path))
+    loader.update(
+        link=["https://www.douyin.com/user/private"],
+        cookies={"sid_guard": "private"},
+        transcript={"api_key": "private", "enabled": True},
+    )
+
+    assert loader.ensure_file() is True
+    written = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+
+    assert "link" not in written
+    assert "cookies" not in written
+    assert "cookie" not in written
+    assert written["transcript"]["api_key"] == ""
+    assert written["transcript"]["enabled"] is True
+    assert written["database_path"] == "./data/dy_downloader.db"
+
+
+def test_ensure_file_does_not_overwrite_existing_config(tmp_path):
+    config_path = tmp_path / "config.yml"
+    config_path.write_text("thread: 2\ncookies:\n  sid_guard: keep\n", encoding="utf-8")
+
+    loader = ConfigLoader(str(config_path))
+
+    assert loader.ensure_file() is False
+    written = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    assert written == {"thread": 2, "cookies": {"sid_guard": "keep"}}

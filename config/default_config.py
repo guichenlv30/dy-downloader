@@ -1,7 +1,8 @@
 from typing import Any, Dict
 
 DEFAULT_CONFIG: Dict[str, Any] = {
-    "path": "./Downloaded/",
+    "data_dir": "./data/",
+    "path": "./data/Downloaded/",
     "music": True,
     "cover": True,
     "avatar": True,
@@ -46,7 +47,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "rate_limit": 2,
     "proxy": "",
     "database": True,
-    "database_path": "dy_downloader.db",
+    "database_path": "./data/dy_downloader.db",
     "progress": {
         "quiet_logs": True,
     },

@@ -11,6 +11,10 @@ build
 .pytest_cache
 .ruff_cache
 Downloaded
+data
+logs
+Transcripts
 *.db
 .cookies.json
-config.yml
+config*.yml
+!config.example.yml

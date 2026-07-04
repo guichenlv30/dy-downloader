@@ -426,7 +426,7 @@ async def test_process_video_does_not_log_api_key_plaintext(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    sentinel_key = "sk-PLAINTEXT-SECRET-DO-NOT-LEAK-12345"
+    sentinel_key = "test-openai-key-plaintext-secret-do-not-leak"
     manager, db, download_root = _build_manager(
         tmp_path, api_key_env_value=sentinel_key, monkeypatch=monkeypatch
     )
@@ -467,7 +467,7 @@ async def test_call_openai_transcription_redacts_api_key_in_error_body(
     token, the resulting RuntimeError must NOT carry the raw key —
     otherwise it lands in ``transcript_jobs.error_message`` and a
     later DB dump leaks it."""
-    sentinel = "sk-LEAK-PROBE-1234567890ABCDEF"
+    sentinel = "test-openai-key-leak-probe"
     manager, db, download_root = _build_manager(
         tmp_path, api_key_env_value=sentinel, monkeypatch=monkeypatch
     )
@@ -526,11 +526,11 @@ async def test_call_openai_transcription_redacts_api_key_in_error_body(
     )
     # Masked form should be present so the user can still tell which
     # key was used.
-    assert "sk-L...CDEF" in err_msg
+    assert "test...robe" in err_msg
     # DB record matches.
     db_msg = db.transcript_jobs[-1]["error_message"]
     assert sentinel not in db_msg
-    assert "sk-L...CDEF" in db_msg
+    assert "test...robe" in db_msg
 
 
 # ---------------------------------------------------------------------------

@@ -1,116 +1,114 @@
-# 抖音下载器 V2.0（Douyin Downloader）
+# 鎶栭煶涓嬭浇鍣?V2.0锛圖ouyin Downloader锛?
 
 <p align="center">
-  <img src="https://socialify.git.ci/jiji262/douyin-downloader/image?custom_description=%E6%8A%96%E9%9F%B3%E6%89%B9%E9%87%8F%E4%B8%8B%E8%BD%BD%E5%B7%A5%E5%85%B7%EF%BC%8C%E5%8E%BB%E6%B0%B4%E5%8D%B0%EF%BC%8C%E6%94%AF%E6%8C%81%E8%A7%86%E9%A2%91%E3%80%81%E5%9B%BE%E9%9B%86%E3%80%81%E4%BD%9C%E8%80%85%E4%B8%BB%E9%A1%B5%E6%89%B9%E9%87%8F%E4%B8%8B%E8%BD%BD%E3%80%82&description=1&font=Jost&forks=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2Fjiji262%2Fdouyin-downloader%2Frefs%2Fheads%2Fmain%2Fimg%2Flogo.png&name=1&owner=1&pattern=Circuit+Board&pulls=1&stargazers=1&theme=Light" alt="douyin-downloader" width="820" />
+  <strong>dy-downloader</strong>
 </p>
 
-一个面向实用场景的抖音下载工具，支持视频、图文、合集、音乐、收藏夹等多种类型下载，以及作者主页批量下载，默认带进度展示、重试、数据库去重、下载完整性校验和浏览器兜底能力。
+涓€涓潰鍚戝疄鐢ㄥ満鏅殑鎶栭煶涓嬭浇宸ュ叿锛屾敮鎸佽棰戙€佸浘鏂囥€佸悎闆嗐€侀煶涔愩€佹敹钘忓す绛夊绉嶇被鍨嬩笅杞斤紝浠ュ強浣滆€呬富椤垫壒閲忎笅杞斤紝榛樿甯﹁繘搴﹀睍绀恒€侀噸璇曘€佹暟鎹簱鍘婚噸銆佷笅杞藉畬鏁存€ф牎楠屽拰娴忚鍣ㄥ厹搴曡兘鍔涖€?
 
-## 桌面版（Douzy）
+## 妗岄潰鐗堬紙Douzy锛?
 
-基于同一套后端打造的桌面客户端——粘贴链接即刻开始，同步关注列表，可视化跟踪下载进度。
-
-> **内测中：** 桌面版目前处于内测期，如需使用，请到 [Releases](https://github.com/jiji262/douyin-downloader/releases) 页面下载安装文件。
+鍩轰簬鍚屼竴濂楀悗绔墦閫犵殑妗岄潰瀹㈡埛绔€斺€旂矘璐撮摼鎺ュ嵆鍒诲紑濮嬶紝鍚屾鍏虫敞鍒楄〃锛屽彲瑙嗗寲璺熻釜涓嬭浇杩涘害銆?
 
 <table>
   <tr>
-    <td width="33%"><img src="./img/desktop/001.png" alt="下载 — 粘贴链接即刻开始" width="100%" /><br/><sub>下载 · 粘贴链接即刻开始</sub></td>
-    <td width="33%"><img src="./img/desktop/002.png" alt="关注同步" width="100%" /><br/><sub>关注 · 同步博主列表</sub></td>
-    <td width="33%"><img src="./img/desktop/003.png" alt="任务中心" width="100%" /><br/><sub>任务中心 · 逐任务状态</sub></td>
+    <td width="33%"><img src="./img/desktop/001.png" alt="涓嬭浇 鈥?绮樿创閾炬帴鍗冲埢寮€濮? width="100%" /><br/><sub>涓嬭浇 路 绮樿创閾炬帴鍗冲埢寮€濮?/sub></td>
+    <td width="33%"><img src="./img/desktop/002.png" alt="鍏虫敞鍚屾" width="100%" /><br/><sub>鍏虫敞 路 鍚屾鍗氫富鍒楄〃</sub></td>
+    <td width="33%"><img src="./img/desktop/003.png" alt="浠诲姟涓績" width="100%" /><br/><sub>浠诲姟涓績 路 閫愪换鍔＄姸鎬?/sub></td>
   </tr>
   <tr>
-    <td width="33%"><img src="./img/desktop/004.png" alt="作品档案与筛选" width="100%" /><br/><sub>作品档案 · SQLite 历史与筛选</sub></td>
-    <td width="33%"><img src="./img/desktop/005.png" alt="设置与命名模板" width="100%" /><br/><sub>设置 · 文件命名模板</sub></td>
-    <td width="33%"><img src="./img/desktop/006.png" alt="实时下载进度" width="100%" /><br/><sub>实时进度 · 逐任务事件日志</sub></td>
+    <td width="33%"><img src="./img/desktop/004.png" alt="浣滃搧妗ｆ涓庣瓫閫? width="100%" /><br/><sub>浣滃搧妗ｆ 路 SQLite 鍘嗗彶涓庣瓫閫?/sub></td>
+    <td width="33%"><img src="./img/desktop/005.png" alt="璁剧疆涓庡懡鍚嶆ā鏉? width="100%" /><br/><sub>璁剧疆 路 鏂囦欢鍛藉悕妯℃澘</sub></td>
+    <td width="33%"><img src="./img/desktop/006.png" alt="瀹炴椂涓嬭浇杩涘害" width="100%" /><br/><sub>瀹炴椂杩涘害 路 閫愪换鍔′簨浠舵棩蹇?/sub></td>
   </tr>
 </table>
 
-## 功能概览
+## 鍔熻兘姒傝
 
-### 已支持
+### 宸叉敮鎸?
 
-| 功能 | 说明 |
+| 鍔熻兘 | 璇存槑 |
 |------|------|
-| 单个视频下载 | `/video/{aweme_id}` |
-| 单个图文下载 | `/note/{note_id}`、`/gallery/{note_id}` |
-| 单个合集下载 | `/collection/{mix_id}`、`/mix/{mix_id}` |
-| 单个音乐下载 | `/music/{music_id}`（优先原声文件，缺失时回退到该音乐下首条作品） |
-| 短链自动解析 | `https://v.douyin.com/...`、`v.iesdouyin.com`，含裸 host |
-| 用户主页批量下载 | `/user/{sec_uid}` + `mode: [post, like, mix, music]` |
-| 当前登录账号收藏夹下载 | `/user/self?showTab=favorite_collection` + `mode: [collect, collectmix]` |
-| 无水印优先 | 自动选择无水印视频源 |
-| 最高清自动挑选 | 基于 `video.bit_rate` 数组自动选最高码率（视频 + 实况图生效） |
-| **直播录制** | `live.douyin.com/{room_id}` → FLV/HLS，主播下播时保留已录数据 |
-| **评论采集** | 按作品抓评论（可含二级回复），输出 `*_comments.json` |
-| **热搜榜 + 关键词搜索** | `--hot-board [N]` / `--search "关键词"`，结果落 JSONL |
-| **REST API 服务模式** | `--serve --serve-port 8000`（可选 `fastapi + uvicorn`） |
-| **完成通知推送** | 下载完成后推 Bark / Telegram / Webhook |
-| 附加资源下载 | 封面、音乐、头像、JSON 元数据 |
-| 视频转写 | 可选功能，调用 OpenAI Transcriptions API |
-| 并发下载 | 可配置并发数，默认 5 |
-| 失败重试 | 指数退避重试（1s, 2s, 5s） |
-| 速率限制 | 默认 2 请求/秒 |
-| SQLite 去重 | 数据库 + 本地文件双重去重 |
-| 增量下载 | `increase.post/like/mix/music` |
-| 时间过滤 | `start_time` / `end_time` |
-| 浏览器兜底 | 翻页受限时启动浏览器，支持人工过验证码 |
-| 下载完整性校验 | Content-Length 比对，不完整文件自动清理并重试 |
-| 进度条展示 | Rich 进度条，支持 `progress.quiet_logs` 静默模式 |
-| Docker 部署 | 提供 Dockerfile |
-| CI/CD | GitHub Actions 自动测试和 lint |
+| 鍗曚釜瑙嗛涓嬭浇 | `/video/{aweme_id}` |
+| 鍗曚釜鍥炬枃涓嬭浇 | `/note/{note_id}`銆乣/gallery/{note_id}` |
+| 鍗曚釜鍚堥泦涓嬭浇 | `/collection/{mix_id}`銆乣/mix/{mix_id}` |
+| 鍗曚釜闊充箰涓嬭浇 | `/music/{music_id}`锛堜紭鍏堝師澹版枃浠讹紝缂哄け鏃跺洖閫€鍒拌闊充箰涓嬮鏉′綔鍝侊級 |
+| 鐭摼鑷姩瑙ｆ瀽 | `https://v.douyin.com/...`銆乣v.iesdouyin.com`锛屽惈瑁?host |
+| 鐢ㄦ埛涓婚〉鎵归噺涓嬭浇 | `/user/{sec_uid}` + `mode: [post, like, mix, music]` |
+| 褰撳墠鐧诲綍璐﹀彿鏀惰棌澶逛笅杞?| `/user/self?showTab=favorite_collection` + `mode: [collect, collectmix]` |
+| 鏃犳按鍗颁紭鍏?| 鑷姩閫夋嫨鏃犳按鍗拌棰戞簮 |
+| 鏈€楂樻竻鑷姩鎸戦€?| 鍩轰簬 `video.bit_rate` 鏁扮粍鑷姩閫夋渶楂樼爜鐜囷紙瑙嗛 + 瀹炲喌鍥剧敓鏁堬級 |
+| **鐩存挱褰曞埗** | `live.douyin.com/{room_id}` 鈫?FLV/HLS锛屼富鎾笅鎾椂淇濈暀宸插綍鏁版嵁 |
+| **璇勮閲囬泦** | 鎸変綔鍝佹姄璇勮锛堝彲鍚簩绾у洖澶嶏級锛岃緭鍑?`*_comments.json` |
+| **鐑悳姒?+ 鍏抽敭璇嶆悳绱?* | `--hot-board [N]` / `--search "鍏抽敭璇?`锛岀粨鏋滆惤 JSONL |
+| **REST API 鏈嶅姟妯″紡** | `--serve --serve-port 8000`锛堝彲閫?`fastapi + uvicorn`锛?|
+| **瀹屾垚閫氱煡鎺ㄩ€?* | 涓嬭浇瀹屾垚鍚庢帹 Bark / Telegram / Webhook |
+| 闄勫姞璧勬簮涓嬭浇 | 灏侀潰銆侀煶涔愩€佸ご鍍忋€丣SON 鍏冩暟鎹?|
+| 瑙嗛杞啓 | 鍙€夊姛鑳斤紝璋冪敤 OpenAI Transcriptions API |
+| 骞跺彂涓嬭浇 | 鍙厤缃苟鍙戞暟锛岄粯璁?5 |
+| 澶辫触閲嶈瘯 | 鎸囨暟閫€閬块噸璇曪紙1s, 2s, 5s锛?|
+| 閫熺巼闄愬埗 | 榛樿 2 璇锋眰/绉?|
+| SQLite 鍘婚噸 | 鏁版嵁搴?+ 鏈湴鏂囦欢鍙岄噸鍘婚噸 |
+| 澧為噺涓嬭浇 | `increase.post/like/mix/music` |
+| 鏃堕棿杩囨护 | `start_time` / `end_time` |
+| 娴忚鍣ㄥ厹搴?| 缈婚〉鍙楅檺鏃跺惎鍔ㄦ祻瑙堝櫒锛屾敮鎸佷汉宸ヨ繃楠岃瘉鐮?|
+| 涓嬭浇瀹屾暣鎬ф牎楠?| Content-Length 姣斿锛屼笉瀹屾暣鏂囦欢鑷姩娓呯悊骞堕噸璇?|
+| 杩涘害鏉″睍绀?| Rich 杩涘害鏉★紝鏀寔 `progress.quiet_logs` 闈欓粯妯″紡 |
+| Docker 閮ㄧ讲 | 鎻愪緵 Dockerfile |
+| CI/CD | GitHub Actions 鑷姩娴嬭瘯鍜?lint |
 
-### 限制说明
+### 闄愬埗璇存槑
 
-- 浏览器兜底当前仅针对 `post` 完整验证，`like/mix/music` 主要依赖 API 正常分页
-- `number.allmix` / `increase.allmix` 作为兼容别名保留，运行时会归一化到 `mix`
-- `collect` / `collectmix` 当前仅支持当前已登录 Cookie 对应账号
-- `collect` / `collectmix` 必须单独使用，不能和 `post` / `like` / `mix` / `music` 混用
-- `increase` 当前仅支持 `post` / `like` / `mix` / `music`；收藏夹模式不支持增量截断
-- 直播录制 FLV 可直接播放；HLS 源只保存 playlist 文件（需要用 ffmpeg 后处理）
-- webcast 直播接口未覆盖所有场景，视为 experimental
+- 娴忚鍣ㄥ厹搴曞綋鍓嶄粎閽堝 `post` 瀹屾暣楠岃瘉锛宍like/mix/music` 涓昏渚濊禆 API 姝ｅ父鍒嗛〉
+- `number.allmix` / `increase.allmix` 浣滀负鍏煎鍒悕淇濈暀锛岃繍琛屾椂浼氬綊涓€鍖栧埌 `mix`
+- `collect` / `collectmix` 褰撳墠浠呮敮鎸佸綋鍓嶅凡鐧诲綍 Cookie 瀵瑰簲璐﹀彿
+- `collect` / `collectmix` 蹇呴』鍗曠嫭浣跨敤锛屼笉鑳藉拰 `post` / `like` / `mix` / `music` 娣风敤
+- `increase` 褰撳墠浠呮敮鎸?`post` / `like` / `mix` / `music`锛涙敹钘忓す妯″紡涓嶆敮鎸佸閲忔埅鏂?
+- 鐩存挱褰曞埗 FLV 鍙洿鎺ユ挱鏀撅紱HLS 婧愬彧淇濆瓨 playlist 鏂囦欢锛堥渶瑕佺敤 ffmpeg 鍚庡鐞嗭級
+- webcast 鐩存挱鎺ュ彛鏈鐩栨墍鏈夊満鏅紝瑙嗕负 experimental
 
-## 快速开始
+## 蹇€熷紑濮?
 
-### 1) 环境准备
+### 1) 鐜鍑嗗
 
 - Python 3.8+
 - macOS / Linux / Windows
 
-### 2) 安装依赖
+### 2) 瀹夎渚濊禆
 
 ```bash
 pip install -r requirements.txt
 ```
 
-如需浏览器兜底或自动获取 Cookie：
+濡傞渶娴忚鍣ㄥ厹搴曟垨鑷姩鑾峰彇 Cookie锛?
 
 ```bash
 pip install playwright
 python -m playwright install chromium
 ```
 
-### 3) 复制配置
+### 3) 澶嶅埗閰嶇疆
 
 ```bash
-cp config.example.yml config.yml
+python run.py --serve --serve-host 127.0.0.1 --serve-port 8000
 ```
 
-### 4) 获取 Cookie（推荐自动方式）
+### 4) 鑾峰彇 Cookie锛堟帹鑽愯嚜鍔ㄦ柟寮忥級
 
 ```bash
-python -m tools.cookie_fetcher --config config.yml
+http://127.0.0.1:8000
 ```
 
-登录抖音后回到终端按 Enter，程序会自动写入配置。
+鐧诲綍鎶栭煶鍚庡洖鍒扮粓绔寜 Enter锛岀▼搴忎細鑷姩鍐欏叆閰嶇疆銆?
 
-### 5) Docker 部署（可选）
+### 5) Docker 閮ㄧ讲锛堝彲閫夛級
 
 ```bash
-docker build -t douyin-downloader .
-docker run -v $(pwd)/config.yml:/app/config.yml -v $(pwd)/Downloaded:/app/Downloaded douyin-downloader
+docker build -t dy-downloader .
+docker run -v $(pwd)/data:/app/data dy-downloader
 ```
 
-## 最小可用配置
+## 鏈€灏忓彲鐢ㄩ厤缃?
 
 ```yaml
 link:
@@ -129,17 +127,10 @@ thread: 5
 retry_times: 3
 proxy: ""
 database: true
-database_path: dy_downloader.db
+database_path: ./data/dy_downloader.db
 
 progress:
   quiet_logs: true
-
-cookies:
-  msToken: ""
-  ttwid: YOUR_TTWID
-  odin_tt: YOUR_ODIN_TT
-  passport_csrf_token: YOUR_CSRF_TOKEN
-  sid_guard: ""
 
 browser_fallback:
   enabled: true
@@ -158,15 +149,15 @@ transcript:
   api_key: ""
 ```
 
-## 使用方式
+## 浣跨敤鏂瑰紡
 
-### 使用配置文件运行
+### 浣跨敤閰嶇疆鏂囦欢杩愯
 
 ```bash
 python run.py -c config.yml
 ```
 
-### 命令行追加参数
+### 鍛戒护琛岃拷鍔犲弬鏁?
 
 ```bash
 python run.py -c config.yml \
@@ -175,55 +166,55 @@ python run.py -c config.yml \
   -p ./Downloaded
 ```
 
-### 参数说明
+### 鍙傛暟璇存槑
 
-| 参数 | 说明 |
+| 鍙傛暟 | 璇存槑 |
 |------|------|
-| `-u, --url` | 追加下载链接（可重复传入） |
-| `-c, --config` | 指定配置文件（默认 `config.yml`） |
-| `-p, --path` | 指定下载目录 |
-| `-t, --thread` | 指定并发数 |
-| `--show-warnings` | 显示 warning/error 日志 |
-| `-v, --verbose` | 显示 info/warning/error 日志 |
-| `--hot-board [N]` | 拉取抖音热搜榜并导出 JSONL，可选上限 N |
-| `--search KEYWORD` | 按关键词搜索作品并导出 JSONL |
-| `--search-max N` | `--search` 场景下最多拉取条数（默认 50） |
-| `--serve` | 以 REST API 服务模式运行（需要 `pip install fastapi uvicorn`） |
-| `--serve-host HOST` | REST 服务监听地址（默认 127.0.0.1） |
-| `--serve-port PORT` | REST 服务监听端口（默认 8000） |
-| `--version` | 显示版本号 |
+| `-u, --url` | 杩藉姞涓嬭浇閾炬帴锛堝彲閲嶅浼犲叆锛?|
+| `-c, --config` | 鎸囧畾閰嶇疆鏂囦欢锛堥粯璁?`config.yml`锛?|
+| `-p, --path` | 鎸囧畾涓嬭浇鐩綍 |
+| `-t, --thread` | 鎸囧畾骞跺彂鏁?|
+| `--show-warnings` | 鏄剧ず warning/error 鏃ュ織 |
+| `-v, --verbose` | 鏄剧ず info/warning/error 鏃ュ織 |
+| `--hot-board [N]` | 鎷夊彇鎶栭煶鐑悳姒滃苟瀵煎嚭 JSONL锛屽彲閫変笂闄?N |
+| `--search KEYWORD` | 鎸夊叧閿瘝鎼滅储浣滃搧骞跺鍑?JSONL |
+| `--search-max N` | `--search` 鍦烘櫙涓嬫渶澶氭媺鍙栨潯鏁帮紙榛樿 50锛?|
+| `--serve` | 浠?REST API 鏈嶅姟妯″紡杩愯锛堥渶瑕?`pip install fastapi uvicorn`锛?|
+| `--serve-host HOST` | REST 鏈嶅姟鐩戝惉鍦板潃锛堥粯璁?127.0.0.1锛?|
+| `--serve-port PORT` | REST 鏈嶅姟鐩戝惉绔彛锛堥粯璁?8000锛?|
+| `--version` | 鏄剧ず鐗堟湰鍙?|
 
-## 典型场景
+## 鍏稿瀷鍦烘櫙
 
-### 下载单个视频
+### 涓嬭浇鍗曚釜瑙嗛
 
 ```yaml
 link:
   - https://www.douyin.com/video/7604129988555574538
 ```
 
-### 下载单个图文
+### 涓嬭浇鍗曚釜鍥炬枃
 
 ```yaml
 link:
   - https://www.douyin.com/note/7341234567890123456
 ```
 
-### 下载单个合集
+### 涓嬭浇鍗曚釜鍚堥泦
 
 ```yaml
 link:
   - https://www.douyin.com/collection/7341234567890123456
 ```
 
-### 下载单个音乐
+### 涓嬭浇鍗曚釜闊充箰
 
 ```yaml
 link:
   - https://www.douyin.com/music/7341234567890123456
 ```
 
-### 批量下载作者主页作品
+### 鎵归噺涓嬭浇浣滆€呬富椤典綔鍝?
 
 ```yaml
 link:
@@ -234,7 +225,7 @@ number:
   post: 50
 ```
 
-### 批量下载作者点赞作品
+### 鎵归噺涓嬭浇浣滆€呯偣璧炰綔鍝?
 
 ```yaml
 link:
@@ -242,10 +233,10 @@ link:
 mode:
   - like
 number:
-  like: 0    # 0 表示全量下载
+  like: 0    # 0 琛ㄧず鍏ㄩ噺涓嬭浇
 ```
 
-### 同时下载多种模式
+### 鍚屾椂涓嬭浇澶氱妯″紡
 
 ```yaml
 link:
@@ -257,9 +248,9 @@ mode:
   - music
 ```
 
-跨模式自动去重：同一个 aweme_id 在不同模式下不会重复下载。
+璺ㄦā寮忚嚜鍔ㄥ幓閲嶏細鍚屼竴涓?aweme_id 鍦ㄤ笉鍚屾ā寮忎笅涓嶄細閲嶅涓嬭浇銆?
 
-### 批量下载当前登录账号收藏夹作品
+### 鎵归噺涓嬭浇褰撳墠鐧诲綍璐﹀彿鏀惰棌澶逛綔鍝?
 
 ```yaml
 link:
@@ -270,7 +261,7 @@ number:
   collect: 0
 ```
 
-### 批量下载当前登录账号收藏合集
+### 鎵归噺涓嬭浇褰撳墠鐧诲綍璐﹀彿鏀惰棌鍚堥泦
 
 ```yaml
 link:
@@ -281,66 +272,66 @@ number:
   collectmix: 0
 ```
 
-### 录制直播（实验性）
+### 褰曞埗鐩存挱锛堝疄楠屾€э級
 
 ```yaml
 link:
-  - https://live.douyin.com/123456789   # 也支持 /follow/live/{room_id}
+  - https://live.douyin.com/123456789   # 涔熸敮鎸?/follow/live/{room_id}
 live:
-  max_duration_seconds: 3600   # 0 = 录到主播下播
+  max_duration_seconds: 3600   # 0 = 褰曞埌涓绘挱涓嬫挱
   chunk_size: 65536
   idle_timeout_seconds: 30
 ```
 
-录制的 FLV 会保存在 `Downloaded/{作者}/live/` 下，并附带 `*_room.json` 直播间元数据快照。
-主播下播、网络空闲或 Ctrl+C 中断时，**已录制的字节会被保留**（.tmp 文件自动提升为正式文件）。
+褰曞埗鐨?FLV 浼氫繚瀛樺湪 `Downloaded/{浣滆€厎/live/` 涓嬶紝骞堕檮甯?`*_room.json` 鐩存挱闂村厓鏁版嵁蹇収銆?
+涓绘挱涓嬫挱銆佺綉缁滅┖闂叉垨 Ctrl+C 涓柇鏃讹紝**宸插綍鍒剁殑瀛楄妭浼氳淇濈暀**锛?tmp 鏂囦欢鑷姩鎻愬崌涓烘寮忔枃浠讹級銆?
 
-### 采集作品评论
+### 閲囬泦浣滃搧璇勮
 
 ```yaml
 comments:
   enabled: true
-  include_replies: false   # 设为 true 会多拉每条评论的二级回复（额外请求量）
-  max_comments: 500        # 0 = 不限
+  include_replies: false   # 璁句负 true 浼氬鎷夋瘡鏉¤瘎璁虹殑浜岀骇鍥炲锛堥澶栬姹傞噺锛?
+  max_comments: 500        # 0 = 涓嶉檺
   page_size: 20
 ```
 
-会在媒体文件旁生成 `{date}_{title}_{aweme_id}_comments.json`。
+浼氬湪濯掍綋鏂囦欢鏃佺敓鎴?`{date}_{title}_{aweme_id}_comments.json`銆?
 
-### 导出热搜榜快照
+### 瀵煎嚭鐑悳姒滃揩鐓?
 
 ```bash
 python run.py --hot-board 30 -p ./Downloaded
-# 输出：./Downloaded/hot_board/20260424_221530.jsonl
+# 杈撳嚭锛?/Downloaded/hot_board/20260424_221530.jsonl
 ```
 
-### 关键词搜索
+### 鍏抽敭璇嶆悳绱?
 
 ```bash
-python run.py --search "猫咪" --search-max 100 -p ./Downloaded
-# 输出：./Downloaded/search/猫咪_20260424_221530.jsonl
+python run.py --search "鐚挭" --search-max 100 -p ./Downloaded
+# 杈撳嚭锛?/Downloaded/search/鐚挭_20260424_221530.jsonl
 ```
 
-### 以 REST API 服务模式运行
+### 浠?REST API 鏈嶅姟妯″紡杩愯
 
 ```bash
-pip install fastapi uvicorn       # 一次性可选依赖
+pip install fastapi uvicorn       # 涓€娆℃€у彲閫変緷璧?
 python run.py --serve --serve-port 8000
 ```
 
-接口：
+鎺ュ彛锛?
 
-| Method | Path | 说明 |
+| Method | Path | 璇存槑 |
 |--------|------|------|
-| POST | `/api/v1/download` | 提交 `{"url": "..."}`，返回 `{job_id, status}` |
-| GET | `/api/v1/jobs/{job_id}` | 查询指定 job 的状态/计数 |
-| GET | `/api/v1/jobs` | 列出最近的 job（按 TTL + 容量剪裁） |
-| GET | `/api/v1/health` | 健康探针 |
+| POST | `/api/v1/download` | 鎻愪氦 `{"url": "..."}`锛岃繑鍥?`{job_id, status}` |
+| GET | `/api/v1/jobs/{job_id}` | 鏌ヨ鎸囧畾 job 鐨勭姸鎬?璁℃暟 |
+| GET | `/api/v1/jobs` | 鍒楀嚭鏈€杩戠殑 job锛堟寜 TTL + 瀹归噺鍓锛?|
+| GET | `/api/v1/health` | 鍋ュ悍鎺㈤拡 |
 
-完成态的 job 会按 TTL（默认 24 小时）+ 最大数量（默认 500）自动剪裁；in-flight 的 job 永不被裁掉。
-可通过 `server.max_jobs` / `server.job_ttl_seconds` 调整。
+瀹屾垚鎬佺殑 job 浼氭寜 TTL锛堥粯璁?24 灏忔椂锛? 鏈€澶ф暟閲忥紙榛樿 500锛夎嚜鍔ㄥ壀瑁侊紱in-flight 鐨?job 姘镐笉琚鎺夈€?
+鍙€氳繃 `server.max_jobs` / `server.job_ttl_seconds` 璋冩暣銆?
 
-### 完成后发送通知
+### 瀹屾垚鍚庡彂閫侀€氱煡
 
 ```yaml
 notifications:
@@ -354,248 +345,241 @@ notifications:
     - type: telegram
       bot_token: "123456:ABC..."
       chat_id: "987654321"
-    - type: webhook                 # 企业微信/飞书/钉钉 bot URL 同样可用
+    - type: webhook                 # 浼佷笟寰俊/椋炰功/閽夐拤 bot URL 鍚屾牱鍙敤
       url: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx
       extra_body:
         msgtype: text
 ```
 
-所有启用的 provider 会并发推送；单个 provider 失败不会阻塞主下载流程。
+鎵€鏈夊惎鐢ㄧ殑 provider 浼氬苟鍙戞帹閫侊紱鍗曚釜 provider 澶辫触涓嶄細闃诲涓讳笅杞芥祦绋嬨€?
 
-### 增量下载（只下载新作品）
+### 澧為噺涓嬭浇锛堝彧涓嬭浇鏂颁綔鍝侊級
 
 ```yaml
 increase:
   post: true
-database: true    # 增量模式依赖数据库记录
+database: true    # 澧為噺妯″紡渚濊禆鏁版嵁搴撹褰?
 ```
 
-### 全量抓取（不限制数量）
+### 鍏ㄩ噺鎶撳彇锛堜笉闄愬埗鏁伴噺锛?
 
 ```yaml
 number:
   post: 0
 ```
 
-## 可选功能：视频转写（transcript）
+## 鍙€夊姛鑳斤細瑙嗛杞啓锛坱ranscript锛?
 
-当前实现仅对**视频作品**生效（图文不会生成转写）。
+褰撳墠瀹炵幇浠呭**瑙嗛浣滃搧**鐢熸晥锛堝浘鏂囦笉浼氱敓鎴愯浆鍐欙級銆?
 
-### 1) 开启方式
+### 1) 寮€鍚柟寮?
 
 ```yaml
 transcript:
   enabled: true
   model: gpt-4o-mini-transcribe
-  output_dir: ""        # 留空: 与视频同目录；非空: 镜像到指定目录
+  output_dir: ""        # 鐣欑┖: 涓庤棰戝悓鐩綍锛涢潪绌? 闀滃儚鍒版寚瀹氱洰褰?
   response_formats:
     - txt
     - json
   api_key_env: OPENAI_API_KEY
-  api_key: ""           # 可直接填，或使用环境变量
+  api_key: ""           # 鍙洿鎺ュ～锛屾垨浣跨敤鐜鍙橀噺
 ```
 
-推荐通过环境变量提供密钥：
+鎺ㄨ崘閫氳繃鐜鍙橀噺鎻愪緵瀵嗛挜锛?
 
 ```bash
 export OPENAI_API_KEY="sk-xxxx"
 ```
 
-### 2) 输出文件
+### 2) 杈撳嚭鏂囦欢
 
-启用后会生成：
+鍚敤鍚庝細鐢熸垚锛?
 
 - `xxx.transcript.txt`
 - `xxx.transcript.json`
 
-若 `database: true`，会在数据库 `transcript_job` 表记录状态（`success/failed/skipped`）。
+鑻?`database: true`锛屼細鍦ㄦ暟鎹簱 `transcript_job` 琛ㄨ褰曠姸鎬侊紙`success/failed/skipped`锛夈€?
 
-## 测试
+## 娴嬭瘯
 
-推荐使用：
+鎺ㄨ崘浣跨敤锛?
 
 ```bash
 python3 -m pytest -q
 ```
 
-当前也支持直接运行：
+褰撳墠涔熸敮鎸佺洿鎺ヨ繍琛岋細
 
 ```bash
 pytest -q
 ```
 
-## 关键配置项
+## 鍏抽敭閰嶇疆椤?
 
-| 配置项 | 说明 |
+| 閰嶇疆椤?| 璇存槑 |
 |--------|------|
-| `mode` | 支持 `post`/`like`/`mix`/`music`；当前登录收藏夹模式额外支持单独使用的 `collect`/`collectmix` |
-| `number.post/like/mix/music/collect/collectmix` | 各模式下载数量限制，0 为不限 |
-| `increase.post/like/mix/music` | 各模式增量开关 |
-| `start_time` / `end_time` | 时间过滤（格式 `YYYY-MM-DD`） |
-| `folderstyle` | 按作品维度创建子目录 |
-| `browser_fallback.*` | `post` 翻页受限时启用浏览器兜底 |
-| `progress.quiet_logs` | 进度阶段静默日志，减少刷屏 |
-| `transcript.*` | 视频下载后的可选转写 |
-| `proxy` | 为 API 请求和媒体下载设置 HTTP/HTTPS 代理，例如 `http://127.0.0.1:7890` |
-| `comments.*` | 按作品采集评论（默认关闭） |
-| `live.*` | 直播录制参数（max_duration_seconds / chunk_size / idle_timeout_seconds） |
-| `notifications.*` | 下载完成后 Bark/Telegram/Webhook 推送 |
-| `server.*` | REST API 服务调优（max_jobs、job_ttl_seconds） |
-| `database` | 启用 SQLite 去重和历史记录 |
-| `database_path` | SQLite 文件路径，默认在当前工作目录生成 `dy_downloader.db` |
-| `thread` | 并发下载数 |
-| `retry_times` | 失败重试次数 |
+| `mode` | 鏀寔 `post`/`like`/`mix`/`music`锛涘綋鍓嶇櫥褰曟敹钘忓す妯″紡棰濆鏀寔鍗曠嫭浣跨敤鐨?`collect`/`collectmix` |
+| `number.post/like/mix/music/collect/collectmix` | 鍚勬ā寮忎笅杞芥暟閲忛檺鍒讹紝0 涓轰笉闄?|
+| `increase.post/like/mix/music` | 鍚勬ā寮忓閲忓紑鍏?|
+| `start_time` / `end_time` | 鏃堕棿杩囨护锛堟牸寮?`YYYY-MM-DD`锛?|
+| `folderstyle` | 鎸変綔鍝佺淮搴﹀垱寤哄瓙鐩綍 |
+| `browser_fallback.*` | `post` 缈婚〉鍙楅檺鏃跺惎鐢ㄦ祻瑙堝櫒鍏滃簳 |
+| `progress.quiet_logs` | 杩涘害闃舵闈欓粯鏃ュ織锛屽噺灏戝埛灞?|
+| `transcript.*` | 瑙嗛涓嬭浇鍚庣殑鍙€夎浆鍐?|
+| `proxy` | 涓?API 璇锋眰鍜屽獟浣撲笅杞借缃?HTTP/HTTPS 浠ｇ悊锛屼緥濡?`http://127.0.0.1:7890` |
+| `comments.*` | 鎸変綔鍝侀噰闆嗚瘎璁猴紙榛樿鍏抽棴锛?|
+| `live.*` | 鐩存挱褰曞埗鍙傛暟锛坢ax_duration_seconds / chunk_size / idle_timeout_seconds锛?|
+| `notifications.*` | 涓嬭浇瀹屾垚鍚?Bark/Telegram/Webhook 鎺ㄩ€?|
+| `server.*` | REST API 鏈嶅姟璋冧紭锛坢ax_jobs銆乯ob_ttl_seconds锛?|
+| `database` | 鍚敤 SQLite 鍘婚噸鍜屽巻鍙茶褰?|
+| `database_path` | SQLite 鏂囦欢璺緞锛岄粯璁ゅ湪褰撳墠宸ヤ綔鐩綍鐢熸垚 `dy_downloader.db` |
+| `thread` | 骞跺彂涓嬭浇鏁?|
+| `retry_times` | 澶辫触閲嶈瘯娆℃暟 |
 
-## 输出目录
+## 杈撳嚭鐩綍
 
-默认 `folderstyle: true` 且 `database_path: dy_downloader.db` 时：
+榛樿 `folderstyle: true` 涓?`database_path: dy_downloader.db` 鏃讹細
 
 ```text
-工作目录/
-├── config.yml
-├── dy_downloader.db          # database: true 时默认生成在这里
-└── Downloaded/
-    ├── download_manifest.jsonl
-    └── 作者名/
-        ├── post/
-        │   └── 2024-02-07_作品标题_aweme_id/
-        │       ├── ...mp4
-        │       ├── ..._cover.jpg
-        │       ├── ..._music.mp3
-        │       ├── ..._data.json
-        │       ├── ..._avatar.jpg
-        │       ├── ...transcript.txt
-        │       └── ...transcript.json
-        ├── like/
-        │   └── ...
-        ├── mix/
-        │   └── ...
-        ├── music/
-        │   └── ...
-        ├── collect/
-        │   └── ...
-        └── collectmix/
-            └── ...
+宸ヤ綔鐩綍/
+鈹溾攢鈹€ config.yml
+鈹溾攢鈹€ dy_downloader.db          # database: true 鏃堕粯璁ょ敓鎴愬湪杩欓噷
+鈹斺攢鈹€ Downloaded/
+    鈹溾攢鈹€ download_manifest.jsonl
+    鈹斺攢鈹€ 浣滆€呭悕/
+        鈹溾攢鈹€ post/
+        鈹?  鈹斺攢鈹€ 2024-02-07_浣滃搧鏍囬_aweme_id/
+        鈹?      鈹溾攢鈹€ ...mp4
+        鈹?      鈹溾攢鈹€ ..._cover.jpg
+        鈹?      鈹溾攢鈹€ ..._music.mp3
+        鈹?      鈹溾攢鈹€ ..._data.json
+        鈹?      鈹溾攢鈹€ ..._avatar.jpg
+        鈹?      鈹溾攢鈹€ ...transcript.txt
+        鈹?      鈹斺攢鈹€ ...transcript.json
+        鈹溾攢鈹€ like/
+        鈹?  鈹斺攢鈹€ ...
+        鈹溾攢鈹€ mix/
+        鈹?  鈹斺攢鈹€ ...
+        鈹溾攢鈹€ music/
+        鈹?  鈹斺攢鈹€ ...
+        鈹溾攢鈹€ collect/
+        鈹?  鈹斺攢鈹€ ...
+        鈹斺攢鈹€ collectmix/
+            鈹斺攢鈹€ ...
 Downloaded/
-├── download_manifest.jsonl
-├── dy_downloader.db          # database: true 时生成
-├── hot_board/                # 使用 --hot-board 时生成
-│   └── 20260424_221530.jsonl
-├── search/                   # 使用 --search 时生成
-│   └── 猫咪_20260424_221530.jsonl
-└── 作者名/
-    ├── post/
-    │   └── 2024-02-07_作品标题_aweme_id/
-    │       ├── ...mp4
-    │       ├── ..._cover.jpg
-    │       ├── ..._music.mp3
-    │       ├── ..._data.json
-    │       ├── ..._avatar.jpg
-    │       ├── ..._comments.json    # comments.enabled 时生成
-    │       ├── ...transcript.txt
-    │       └── ...transcript.json
-    ├── like/
-    │   └── ...
-    ├── mix/
-    │   └── ...
-    ├── music/
-    │   └── ...
-    └── live/                 # 录制直播时生成
-        └── 2026-04-24_2215_直播标题_房间号/
-            ├── ...flv
-            └── ..._room.json
+鈹溾攢鈹€ download_manifest.jsonl
+鈹溾攢鈹€ dy_downloader.db          # database: true 鏃剁敓鎴?
+鈹溾攢鈹€ hot_board/                # 浣跨敤 --hot-board 鏃剁敓鎴?
+鈹?  鈹斺攢鈹€ 20260424_221530.jsonl
+鈹溾攢鈹€ search/                   # 浣跨敤 --search 鏃剁敓鎴?
+鈹?  鈹斺攢鈹€ 鐚挭_20260424_221530.jsonl
+鈹斺攢鈹€ 浣滆€呭悕/
+    鈹溾攢鈹€ post/
+    鈹?  鈹斺攢鈹€ 2024-02-07_浣滃搧鏍囬_aweme_id/
+    鈹?      鈹溾攢鈹€ ...mp4
+    鈹?      鈹溾攢鈹€ ..._cover.jpg
+    鈹?      鈹溾攢鈹€ ..._music.mp3
+    鈹?      鈹溾攢鈹€ ..._data.json
+    鈹?      鈹溾攢鈹€ ..._avatar.jpg
+    鈹?      鈹溾攢鈹€ ..._comments.json    # comments.enabled 鏃剁敓鎴?
+    鈹?      鈹溾攢鈹€ ...transcript.txt
+    鈹?      鈹斺攢鈹€ ...transcript.json
+    鈹溾攢鈹€ like/
+    鈹?  鈹斺攢鈹€ ...
+    鈹溾攢鈹€ mix/
+    鈹?  鈹斺攢鈹€ ...
+    鈹溾攢鈹€ music/
+    鈹?  鈹斺攢鈹€ ...
+    鈹斺攢鈹€ live/                 # 褰曞埗鐩存挱鏃剁敓鎴?
+        鈹斺攢鈹€ 2026-04-24_2215_鐩存挱鏍囬_鎴块棿鍙?
+            鈹溾攢鈹€ ...flv
+            鈹斺攢鈹€ ..._room.json
 ```
 
-## 重新下载
+## 閲嶆柊涓嬭浇
 
-程序通过**数据库记录 + 本地文件**双重检查判断是否跳过已下载内容。要重新下载，需要按以下方式清理数据：
+绋嬪簭閫氳繃**鏁版嵁搴撹褰?+ 鏈湴鏂囦欢**鍙岄噸妫€鏌ュ垽鏂槸鍚﹁烦杩囧凡涓嬭浇鍐呭銆傝閲嶆柊涓嬭浇锛岄渶瑕佹寜浠ヤ笅鏂瑰紡娓呯悊鏁版嵁锛?
 
-### 重新下载特定作品
+### 閲嶆柊涓嬭浇鐗瑰畾浣滃搧
 
 ```bash
-# 删除本地文件（文件名中包含 aweme_id）
-rm -rf Downloaded/作者名/post/*_<aweme_id>/
+# 鍒犻櫎鏈湴鏂囦欢锛堟枃浠跺悕涓寘鍚?aweme_id锛?
+rm -rf Downloaded/浣滆€呭悕/post/*_<aweme_id>/
 
-# 删除数据库记录
-sqlite3 dy_downloader.db "DELETE FROM aweme WHERE aweme_id = '<aweme_id>';"
+# 鍒犻櫎鏁版嵁搴撹褰?
+sqlite3 data/dy_downloader.db "DELETE FROM aweme WHERE aweme_id = '<aweme_id>';"
 ```
 
-### 重新下载某个作者的全部作品
+### 閲嶆柊涓嬭浇鏌愪釜浣滆€呯殑鍏ㄩ儴浣滃搧
 
 ```bash
-rm -rf Downloaded/作者名/
-sqlite3 dy_downloader.db "DELETE FROM aweme WHERE author_name = '作者名';"
+rm -rf Downloaded/浣滆€呭悕/
+sqlite3 data/dy_downloader.db "DELETE FROM aweme WHERE author_name = '浣滆€呭悕';"
 ```
 
-### 全部从零重新下载
+### 鍏ㄩ儴浠庨浂閲嶆柊涓嬭浇
 
 ```bash
 rm -rf Downloaded/
 rm dy_downloader.db
 ```
 
-> **注意：** 只删数据库不删文件不会触发重新下载——程序会扫描本地文件名中的 aweme_id 进行去重。只删文件不删数据库会触发重新下载（数据库中有记录但文件不存在时视为需要重新下载）。
+> **娉ㄦ剰锛?* 鍙垹鏁版嵁搴撲笉鍒犳枃浠朵笉浼氳Е鍙戦噸鏂颁笅杞解€斺€旂▼搴忎細鎵弿鏈湴鏂囦欢鍚嶄腑鐨?aweme_id 杩涜鍘婚噸銆傚彧鍒犳枃浠朵笉鍒犳暟鎹簱浼氳Е鍙戦噸鏂颁笅杞斤紙鏁版嵁搴撲腑鏈夎褰曚絾鏂囦欢涓嶅瓨鍦ㄦ椂瑙嗕负闇€瑕侀噸鏂颁笅杞斤級銆?
 
-## 常见问题
+## 甯歌闂
 
-### 1) 只能抓到 20 条作品怎么办？
+### 1) 鍙兘鎶撳埌 20 鏉′綔鍝佹€庝箞鍔烇紵
 
-这是翻页风控的常见现象。确保：
+杩欐槸缈婚〉椋庢帶鐨勫父瑙佺幇璞°€傜‘淇濓細
 
 - `browser_fallback.enabled: true`
 - `browser_fallback.headless: false`
-- 浏览器弹窗出现后手动完成验证，不要立即关闭窗口
+- 娴忚鍣ㄥ脊绐楀嚭鐜板悗鎵嬪姩瀹屾垚楠岃瘉锛屼笉瑕佺珛鍗冲叧闂獥鍙?
 
-### 2) 进度条出现重复刷屏怎么办？
+### 2) 杩涘害鏉″嚭鐜伴噸澶嶅埛灞忔€庝箞鍔烇紵
 
-默认 `progress.quiet_logs: true` 会在进度阶段静默日志。  
-调试时再临时加 `--show-warnings` 或 `-v`。
+榛樿 `progress.quiet_logs: true` 浼氬湪杩涘害闃舵闈欓粯鏃ュ織銆?
+璋冭瘯鏃跺啀涓存椂鍔?`--show-warnings` 鎴?`-v`銆?
 
-### 3) Cookie 失效怎么办？
+### 3) Cookie 澶辨晥鎬庝箞鍔烇紵
 
-重新执行：
-
-```bash
-python -m tools.cookie_fetcher --config config.yml
-```
-
-### 4) 为什么没有生成 transcript 文件？
-
-请依次检查：
-
-- `transcript.enabled` 是否为 `true`
-- 是否下载的是视频（图文不转写）
-- `OPENAI_API_KEY`（或 `transcript.api_key`）是否有效
-- `response_formats` 是否包含 `txt` 或 `json`
-
-### 5) 如何查看下载历史？
+閲嶆柊鎵ц锛?
 
 ```bash
-sqlite3 dy_downloader.db "SELECT aweme_id, title, author_name, datetime(download_time, 'unixepoch', 'localtime') FROM aweme ORDER BY download_time DESC LIMIT 20;"
+python run.py --serve --serve-host 127.0.0.1 --serve-port 8000
 ```
 
-## 沟通群
+### 4) 涓轰粈涔堟病鏈夌敓鎴?transcript 鏂囦欢锛?
 
-<img src="./img/fuye.jpg" alt="qun" width="240" />
+璇蜂緷娆℃鏌ワ細
 
-点击链接加入群聊【QQ群】：[https://qm.qq.com/q/9xoNt8Wzv4](https://qm.qq.com/q/9xoNt8Wzv4)
+- `transcript.enabled` 鏄惁涓?`true`
+- 鏄惁涓嬭浇鐨勬槸瑙嗛锛堝浘鏂囦笉杞啓锛?
+- `OPENAI_API_KEY`锛堟垨 `transcript.api_key`锛夋槸鍚︽湁鏁?
+- `response_formats` 鏄惁鍖呭惈 `txt` 鎴?`json`
 
+### 5) 濡備綍鏌ョ湅涓嬭浇鍘嗗彶锛?
 
-## 免责声明
+```bash
+sqlite3 data/dy_downloader.db "SELECT aweme_id, title, author_name, datetime(download_time, 'unixepoch', 'localtime') FROM aweme ORDER BY download_time DESC LIMIT 20;"
+```
 
-本项目仅用于技术研究、学习交流与个人数据管理。请在合法合规前提下使用：
+## 鍏嶈矗澹版槑
 
-- 不得用于侵犯他人隐私、版权或其他合法权益
-- 不得用于任何违法违规用途
-- 使用者应自行承担因使用本项目产生的全部风险与责任
-- 如平台规则、接口策略变更导致功能失效，属于正常技术风险
+鏈」鐩粎鐢ㄤ簬鎶€鏈爺绌躲€佸涔犱氦娴佷笌涓汉鏁版嵁绠＄悊銆傝鍦ㄥ悎娉曞悎瑙勫墠鎻愪笅浣跨敤锛?
 
-如果你继续使用本项目，即视为已阅读并同意上述声明。
+- 涓嶅緱鐢ㄤ簬渚电姱浠栦汉闅愮銆佺増鏉冩垨鍏朵粬鍚堟硶鏉冪泭
+- 涓嶅緱鐢ㄤ簬浠讳綍杩濇硶杩濊鐢ㄩ€?
+- 浣跨敤鑰呭簲鑷鎵挎媴鍥犱娇鐢ㄦ湰椤圭洰浜х敓鐨勫叏閮ㄩ闄╀笌璐ｄ换
+- 濡傚钩鍙拌鍒欍€佹帴鍙ｇ瓥鐣ュ彉鏇村鑷村姛鑳藉け鏁堬紝灞炰簬姝ｅ父鎶€鏈闄?
 
-## 许可证
+濡傛灉浣犵户缁娇鐢ㄦ湰椤圭洰锛屽嵆瑙嗕负宸查槄璇诲苟鍚屾剰涓婅堪澹版槑銆?
 
-本项目采用 MIT License，详见 [LICENSE](./LICENSE)。
+## 璁稿彲璇?
 
-## 友情链接
+鏈」鐩噰鐢?MIT License锛岃瑙?[LICENSE](./LICENSE)銆?
+
+## 鍙嬫儏閾炬帴
 
 - [LINUX DO](https://linux.do/)

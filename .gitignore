@@ -32,6 +32,7 @@ logs/
 
 # Runtime output
 Downloaded/
+data/
 Transcripts/
 dy_downloader.db
 *.db

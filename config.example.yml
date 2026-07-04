@@ -1,7 +1,7 @@
-link:
-  - https://www.douyin.com/user/MS4wLjABAAAA6O7EZyfDRYXxJrUTpf91K3tmB4rBROkAw-nYMfld8ss
+link: []
 
-path: ./Downloaded/
+data_dir: ./data/
+path: ./data/Downloaded/
 
 music: true
 cover: true
@@ -53,7 +53,7 @@ thread: 5
 retry_times: 3
 proxy: ""
 database: true
-database_path: dy_downloader.db
+database_path: ./data/dy_downloader.db
 
 progress:
   quiet_logs: true
@@ -112,10 +112,3 @@ notifications:
 server:
   max_jobs: 500
   job_ttl_seconds: 86400   # 完成态 job 保留 24 小时
-
-cookies:
-  msToken: YOUR_MS_TOKEN
-  ttwid: YOUR_TTWID
-  odin_tt: YOUR_ODIN_TT
-  passport_csrf_token: YOUR_CSRF_TOKEN
-  sid_guard: YOUR_SID_GUARD

@@ -7,12 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from auth import CookieManager
+from cli.login_flow import can_interactive_login, interactive_relogin
 from cli.progress_display import ProgressDisplay
 from config import ConfigLoader
 from control import QueueManager, RateLimiter, RetryHandler
-from core import DouyinAPIClient, DownloaderFactory, URLParser
-from core import LoginRequiredError
-from cli.login_flow import can_interactive_login, interactive_relogin
+from core import DouyinAPIClient, DownloaderFactory, LoginRequiredError, URLParser
 from storage import Database, FileManager
 from utils.logger import set_console_log_level, setup_logger
 from utils.notifier import build_notifier
@@ -190,18 +189,23 @@ async def main_async(args):
     # 若 config 不存在且使用了 --hot-board / --search / --serve 等独立子命令，
     # 允许以默认配置运行（只要命令行提供了 --path）。
     if not Path(config_path).exists():
-        if not (args.hot_board is not None or args.search or args.serve):
-            display.print_error(f"Config file not found: {config_path}")
-            return
-        # For ``--serve`` we still pass the (yet-missing) path so later
-        # ``config.save()`` calls from the REST settings endpoint create
-        # the file in the right place (e.g. Electron's userData dir).
-        # Other subcommands keep the historical behaviour of in-memory
-        # defaults.
-        if args.serve and args.config:
+        can_run_with_defaults = bool(
+            args.hot_board is not None or args.search or args.serve or args.url
+        )
+        # For serve and URL-driven runs, keep the missing config path so a
+        # first-run config.yml can be created beside the project/userData.
+        if args.serve or args.url:
             config = ConfigLoader(config_path)
+            config.ensure_file()
         else:
             config = ConfigLoader(None)
+        if not can_run_with_defaults:
+            ConfigLoader(config_path).ensure_file()
+            display.print_error(
+                f"Config file not found: {config_path}; generated a default one. "
+                "Add a link or pass --url, then run again."
+            )
+            return
     else:
         config = ConfigLoader(config_path)
 

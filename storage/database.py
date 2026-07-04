@@ -1,10 +1,14 @@
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 import aiosqlite
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 def order_cover_mirrors(urls: List[Any]) -> List[str]:
@@ -127,9 +131,10 @@ class Database:
         """)
 
         # `job` persists the task-center JobManager records so they survive
-        # a sidecar restart. Only terminal jobs (success / failed / cancelled)
-        # are ever written here — see server/jobs.py. `last_retry_summary`
-        # and `overrides` are stored as JSON text.
+        # a sidecar restart. Pending/running rows may exist when the process
+        # stops mid-download; startup restore marks those as cancelled instead
+        # of reconstructing tasks from downloaded works.
+        # `last_retry_summary` and `overrides` are stored as JSON text.
         await db.execute("""
             CREATE TABLE IF NOT EXISTS job (
                 job_id              TEXT PRIMARY KEY,
@@ -143,6 +148,9 @@ class Database:
                 failed              INTEGER NOT NULL DEFAULT 0,
                 skipped             INTEGER NOT NULL DEFAULT 0,
                 error               TEXT,
+                step                TEXT,
+                detail              TEXT,
+                updated_at          TEXT,
                 author_nickname     TEXT,
                 author_sec_uid      TEXT,
                 retry_count         INTEGER NOT NULL DEFAULT 0,
@@ -181,6 +189,12 @@ class Database:
         existing_job_columns = {row[1] for row in await cursor.fetchall()}
         if "retry_history" not in existing_job_columns:
             await db.execute("ALTER TABLE job ADD COLUMN retry_history TEXT")
+        if "step" not in existing_job_columns:
+            await db.execute("ALTER TABLE job ADD COLUMN step TEXT")
+        if "detail" not in existing_job_columns:
+            await db.execute("ALTER TABLE job ADD COLUMN detail TEXT")
+        if "updated_at" not in existing_job_columns:
+            await db.execute("ALTER TABLE job ADD COLUMN updated_at TEXT")
 
         # Incremental migration (2026-07, synced from the desktop sibling):
         # cover mirrors + job linkage on the shared aweme table. The
@@ -466,6 +480,110 @@ class Database:
         ]
         return {"total": total, "page": int(page), "size": int(size), "items": items}
 
+    async def get_aweme_download_records(self, aweme_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Return persisted download rows keyed by aweme_id for preview badges."""
+        unique_ids = list(dict.fromkeys(str(aweme_id).strip() for aweme_id in aweme_ids if aweme_id))
+        if not unique_ids:
+            return {}
+
+        db = await self._get_conn()
+        result: Dict[str, Dict[str, Any]] = {}
+        chunk_size = 500
+        for start in range(0, len(unique_ids), chunk_size):
+            chunk = unique_ids[start : start + chunk_size]
+            placeholders = ",".join("?" for _ in chunk)
+            cursor = await db.execute(
+                "SELECT aweme_id, aweme_type, file_path, download_time, job_id "
+                f"FROM aweme WHERE aweme_id IN ({placeholders}) "
+                "AND file_path IS NOT NULL AND file_path != ''",
+                chunk,
+            )
+            rows = await cursor.fetchall()
+            for row in rows:
+                result[str(row[0])] = {
+                    "aweme_id": row[0],
+                    "aweme_type": row[1],
+                    "file_path": row[2],
+                    "download_time": row[3],
+                    "job_id": row[4] or "",
+                }
+        return result
+
+    async def get_archive_authors(
+        self,
+        *,
+        author: Optional[str] = None,
+        date_from: Optional[int] = None,
+        date_to: Optional[int] = None,
+        aweme_type: Optional[str] = None,
+        title: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Return downloaded works grouped by author for the archive overview."""
+        db = await self._get_conn()
+        where: list = ["file_path IS NOT NULL AND file_path != ''"]
+        params: list = []
+        if author:
+            where.append("LOWER(COALESCE(author_name, '')) LIKE ? ESCAPE '\\'")
+            params.append(f"%{_escape_like(author.lower())}%")
+        if date_from is not None:
+            where.append("create_time >= ?")
+            params.append(int(date_from))
+        if date_to is not None:
+            where.append("create_time <= ?")
+            params.append(int(date_to))
+        if aweme_type:
+            where.append("aweme_type = ?")
+            params.append(aweme_type)
+        if title:
+            where.append("LOWER(COALESCE(title, '')) LIKE ? ESCAPE '\\'")
+            params.append(f"%{_escape_like(title.lower())}%")
+        where_sql = "WHERE " + " AND ".join(where)
+
+        cursor = await db.execute(
+            "SELECT author_name, author_id, author_sec_uid, download_time, file_path, cover_urls "
+            f"FROM aweme {where_sql} ORDER BY download_time DESC, id DESC",
+            params,
+        )
+        rows = await cursor.fetchall()
+
+        def _parse_covers(raw: Any) -> List[str]:
+            if not raw:
+                return []
+            try:
+                parsed = json.loads(raw)
+            except (ValueError, TypeError):
+                return []
+            if not isinstance(parsed, list):
+                return []
+            return [u for u in parsed if isinstance(u, str) and u]
+
+        grouped: Dict[tuple, Dict[str, Any]] = {}
+        for row in rows:
+            author_name = row[0] or "未知作者"
+            author_id = row[1] or ""
+            author_sec_uid = row[2] or ""
+            key = (author_name, author_id, author_sec_uid)
+            if key not in grouped:
+                grouped[key] = {
+                    "author_name": author_name,
+                    "author_id": author_id,
+                    "author_sec_uid": author_sec_uid,
+                    "download_count": 0,
+                    "latest_download_time": row[3] or 0,
+                    "file_path": row[4] or "",
+                    "cover_urls": _parse_covers(row[5]),
+                }
+            grouped[key]["download_count"] += 1
+
+        items = list(grouped.values())
+        items.sort(
+            key=lambda item: (
+                -int(item.get("download_count") or 0),
+                -int(item.get("latest_download_time") or 0),
+            )
+        )
+        return items
+
     async def get_aweme_count_by_author(self, author_id: str) -> int:
         db = await self._get_conn()
         cursor = await db.execute("SELECT COUNT(*) FROM aweme WHERE author_id = ?", (author_id,))
@@ -679,6 +797,9 @@ class Database:
             int(job_dict.get("failed") or 0),
             int(job_dict.get("skipped") or 0),
             job_dict.get("error"),
+            job_dict.get("step"),
+            job_dict.get("detail"),
+            job_dict.get("updated_at"),
             job_dict.get("author_nickname"),
             job_dict.get("author_sec_uid"),
             int(job_dict.get("retry_count") or 0),
@@ -693,10 +814,11 @@ class Database:
                 INSERT OR REPLACE INTO job (
                     job_id, url, status, created_at, started_at, finished_at,
                     total, success, failed, skipped, error,
+                    step, detail, updated_at,
                     author_nickname, author_sec_uid,
                     retry_count, last_retry_at, last_retry_summary,
                     retry_history, overrides
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 params,
             )
@@ -732,13 +854,18 @@ class Database:
             await db.commit()
         return deleted
 
-    async def load_terminal_jobs(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Load persisted terminal jobs ordered by created_at DESC.
+    async def load_jobs(
+        self,
+        limit: Optional[int] = None,
+        *,
+        cancel_incomplete: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """Load persisted task-center jobs ordered by created_at DESC.
 
-        Only rows whose ``status`` is a terminal value (success / failed /
-        cancelled) are returned. Running/pending rows shouldn't exist on
-        disk — see server/jobs.py — but we filter defensively in case an
-        older build left stale rows.
+        The task center reads this table directly. It never derives tasks from
+        downloaded aweme rows. When ``cancel_incomplete`` is true, stale
+        pending/running rows from a previous process are first converted into
+        cancelled records so restart history remains truthful.
         """
         db = await self._get_conn()
         if self._conn_lock is None:
@@ -746,24 +873,50 @@ class Database:
 
         sql = (
             "SELECT job_id, url, status, created_at, started_at, finished_at, "
-            "total, success, failed, skipped, error, author_nickname, "
-            "author_sec_uid, retry_count, last_retry_at, last_retry_summary, "
+            "total, success, failed, skipped, error, step, detail, updated_at, "
+            "author_nickname, author_sec_uid, retry_count, last_retry_at, last_retry_summary, "
             "retry_history, overrides FROM job "
-            "WHERE status IN ('success', 'failed', 'cancelled') "
             "ORDER BY created_at DESC"
         )
         if limit is not None and limit > 0:
             sql += f" LIMIT {int(limit)}"
 
         async with self._conn_lock:
+            if cancel_incomplete:
+                now = _now_iso()
+                await db.execute(
+                    """
+                    UPDATE job
+                       SET status = 'cancelled',
+                           finished_at = COALESCE(finished_at, ?),
+                           updated_at = ?,
+                           error = CASE
+                               WHEN COALESCE(error, '') = ''
+                               THEN '程序重启，任务未完成'
+                               ELSE error
+                           END,
+                           step = CASE
+                               WHEN COALESCE(step, '') = '' THEN '已中断'
+                               ELSE step
+                           END,
+                           detail = CASE
+                               WHEN COALESCE(detail, '') = ''
+                               THEN '程序重启前任务未完成'
+                               ELSE detail
+                           END
+                     WHERE status IN ('pending', 'running')
+                    """,
+                    (now, now),
+                )
+                await db.commit()
             cursor = await db.execute(sql)
             rows = await cursor.fetchall()
 
         result: List[Dict[str, Any]] = []
         for row in rows:
-            summary_raw = row[15]
-            history_raw = row[16]
-            overrides_raw = row[17]
+            summary_raw = row[18]
+            history_raw = row[19]
+            overrides_raw = row[20]
             try:
                 summary = json.loads(summary_raw) if summary_raw else None
             except (TypeError, ValueError):
@@ -791,16 +944,28 @@ class Database:
                     "failed": row[8] or 0,
                     "skipped": row[9] or 0,
                     "error": row[10],
-                    "author_nickname": row[11],
-                    "author_sec_uid": row[12],
-                    "retry_count": row[13] or 0,
-                    "last_retry_at": row[14],
+                    "step": row[11] or "",
+                    "detail": row[12] or "",
+                    "updated_at": row[13] or row[5] or row[3],
+                    "author_nickname": row[14],
+                    "author_sec_uid": row[15],
+                    "retry_count": row[16] or 0,
+                    "last_retry_at": row[17],
                     "last_retry_summary": summary,
                     "retry_history": history,
                     "overrides": overrides,
                 }
             )
         return result
+
+    async def load_terminal_jobs(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Backward-compatible helper for callers that only want finished jobs."""
+        rows = await self.load_jobs(limit=None)
+        terminal_statuses = {"success", "failed", "cancelled"}
+        terminal_rows = [row for row in rows if row.get("status") in terminal_statuses]
+        if limit is not None and limit > 0:
+            return terminal_rows[: int(limit)]
+        return terminal_rows
 
     async def close(self):
         if self._conn is not None:

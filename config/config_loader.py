@@ -158,6 +158,7 @@ class ConfigLoader:
     # their config.yml are left untouched.
     _UI_PERSISTED_KEYS = (
         "path",
+        "data_dir",
         "thread",
         "rate_limit",
         "cover",
@@ -168,13 +169,102 @@ class ConfigLoader:
         "proxy",
         "retry_times",
         "folderstyle",
+        "group_by_mode",
+        "author_dir",
         "filename_template",
         "folder_template",
+        "mode",
+        "number",
+        "increase",
         "comments",
         "live",
         "transcript",
         "notifications",
     )
+
+    # Keys that are safe to materialise into a first-run config.yml. Keep
+    # runtime secrets and personal targets out of this list: cookies/cookie,
+    # link, DOUYIN_COOKIE-derived values, and local login state belong in
+    # ignored runtime files instead of the open-source template.
+    _SAFE_BOOTSTRAP_KEYS = (
+        "path",
+        "data_dir",
+        "music",
+        "cover",
+        "avatar",
+        "json",
+        "start_time",
+        "end_time",
+        "folderstyle",
+        "filename_template",
+        "folder_template",
+        "author_dir",
+        "group_by_mode",
+        "download_pinned",
+        "mode",
+        "number",
+        "increase",
+        "thread",
+        "retry_times",
+        "rate_limit",
+        "proxy",
+        "database",
+        "database_path",
+        "progress",
+        "transcript",
+        "auto_cookie",
+        "browser_fallback",
+        "notifications",
+        "comments",
+        "live",
+        "server",
+    )
+
+    def ensure_file(self) -> bool:
+        """Create a first-run config file with non-secret defaults.
+
+        Returns True only when a new file was written. Existing config files
+        are left untouched, and ConfigLoader(None) remains in-memory only.
+        """
+        if not self.config_path:
+            return False
+        target = Path(self.config_path)
+        if target.exists():
+            return False
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            logger.warning("Cannot create config directory %s: %s", target.parent, exc)
+            return False
+
+        snapshot: Dict[str, Any] = {}
+        for key in self._SAFE_BOOTSTRAP_KEYS:
+            if key not in self.config:
+                continue
+            value = self.config[key]
+            if isinstance(value, dict):
+                value = deepcopy(value)
+            elif isinstance(value, list):
+                value = list(value)
+            snapshot[key] = value
+
+        transcript = snapshot.get("transcript")
+        if isinstance(transcript, dict):
+            transcript["api_key"] = ""
+
+        try:
+            with open(target, "w", encoding="utf-8") as handle:
+                yaml.safe_dump(snapshot, handle, allow_unicode=True, sort_keys=False)
+        except OSError as exc:
+            logger.warning("Failed to write bootstrap config %s: %s", target, exc)
+            return False
+
+        if sys.platform != "win32":
+            try:
+                os.chmod(target, 0o600)
+            except OSError as exc:
+                logger.warning("settings_chmod_failed: path=%s error=%r", target, exc)
+        return True
 
     def save(self) -> bool:
         """Persist UI-editable keys back to ``self.config_path``.
