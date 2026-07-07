@@ -2,6 +2,9 @@
 .gitignore
 .github
 .omx
+.venv
+venv
+env
 __pycache__
 *.pyc
 *.pyo
@@ -9,6 +12,7 @@ __pycache__
 dist
 build
 .pytest_cache
+.mypy_cache
 .ruff_cache
 Downloaded
 data

@@ -1,555 +1,119 @@
 # dy-downloader
 
-<p align="center">
-    <a href="https://linux.do" alt="LINUX DO">
-        <img
-            src="https://img.shields.io/badge/LINUX-DO-FFB003.svg?logo=data:image/svg%2bxml;base64,DQo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiPjxwYXRoIGQ9Ik00Ni44Mi0uMDU1aDYuMjVxMjMuOTY5IDIuMDYyIDM4IDIxLjQyNmM1LjI1OCA3LjY3NiA4LjIxNSAxNi4xNTYgOC44NzUgMjUuNDV2Ni4yNXEtMi4wNjQgMjMuOTY4LTIxLjQzIDM4LTExLjUxMiA3Ljg4NS0yNS40NDUgOC44NzRoLTYuMjVxLTIzLjk3LTIuMDY0LTM4LjAwNC0yMS40M1EuOTcxIDY3LjA1Ni0uMDU0IDUzLjE4di02LjQ3M0MxLjM2MiAzMC43ODEgOC41MDMgMTguMTQ4IDIxLjM3IDguODE3IDI5LjA0NyAzLjU2MiAzNy41MjcuNjA0IDQ2LjgyMS0uMDU2IiBzdHlsZT0ic3Ryb2tlOm5vbmU7ZmlsbC1ydWxlOmV2ZW5vZGQ7ZmlsbDojZWNlY2VjO2ZpbGwtb3BhY2l0eToxIi8+PHBhdGggZD0iTTQ3LjI2NiAyLjk1N3EyMi41My0uNjUgMzcuNzc3IDE1LjczOGE0OS43IDQ5LjcgMCAwIDEgNi44NjcgMTAuMTU3cS00MS45NjQuMjIyLTgzLjkzIDAgOS43NS0xOC42MTYgMzAuMDI0LTI0LjM4N2E2MSA2MSAwIDAgMSA5LjI2Mi0xLjUwOCIgc3R5bGU9InN0cm9rZTpub25lO2ZpbGwtcnVsZTpldmVub2RkO2ZpbGw6IzE5MTkxOTtmaWxsLW9wYWNpdHk6MSIvPjxwYXRoIGQ9Ik03Ljk4IDcwLjkyNmMyNy45NzctLjAzNSA1NS45NTQgMCA4My45My4xMTNRODMuNDI2IDg3LjQ3MyA2Ni4xMyA5NC4wODZxLTE4LjgxIDYuNTQ0LTM2LjgzMi0xLjg5OC0xNC4yMDMtNy4wOS0yMS4zMTctMjEuMjYyIiBzdHlsZT0ic3Ryb2tlOm5vbmU7ZmlsbC1ydWxlOmV2ZW5vZGQ7ZmlsbDojZjlhZjAwO2ZpbGwtb3BhY2l0eToxIi8+PC9zdmc+" /></a>
-</p>
-中文文档 (Chinese): [README.zh-CN.md](./README.zh-CN.md)
+源码部署版抖音下载与本地管理工具。它基于 `jiji262/douyin-downloader` 的下载能力扩展了 Web 前端、账号登录、任务队列、内容源预览、本地库、直播录制和运行数据隔离。
 
+前端是 Vue 静态模块 + 原生 CSS，后端是 FastAPI + Python 下载器；不是 Electron / Tauri 桌面壳。启动后在浏览器访问 `http://127.0.0.1:8000`。
 
-A practical Douyin downloader supporting videos, image-notes, collections, music, favorites collections, and profile batch downloads, with progress display, retries, SQLite deduplication, download integrity checks, and browser fallback support.
+> 截图来自本程序当前界面，账号、头像、作者、作品标题和本机路径已脱敏。
 
-## Web App (Douzy)
+## 界面预览
 
-A desktop GUI built on the same backend — paste a link to start, sync your following list, and track downloads visually.
+| 工作台：视频、批量与任务队列 | 直播录制：转 MP4 与保留 FLV |
+| --- | --- |
+| ![工作台](./img/desktop/001.png) | ![直播录制](./img/desktop/002.png) |
 
-<table>
-  <tr>
-    <td width="33%"><img src="./img/desktop/001.png" alt="Download — paste a link to start" width="100%" /><br/><sub>Download · paste a link to start</sub></td>
-    <td width="33%"><img src="./img/desktop/002.png" alt="Following sync" width="100%" /><br/><sub>Following · synced creator list</sub></td>
-    <td width="33%"><img src="./img/desktop/003.png" alt="Task Center" width="100%" /><br/><sub>Task Center · per-job status</sub></td>
-  </tr>
-  <tr>
-    <td width="33%"><img src="./img/desktop/004.png" alt="Archive with filters" width="100%" /><br/><sub>Archive · SQLite history & filters</sub></td>
-    <td width="33%"><img src="./img/desktop/005.png" alt="Settings and naming templates" width="100%" /><br/><sub>Settings · naming templates</sub></td>
-    <td width="33%"><img src="./img/desktop/006.png" alt="Live download progress" width="100%" /><br/><sub>Live progress · per-job event log</sub></td>
-  </tr>
-</table>
+| 内容源：关注、收藏、作者主页 | 本地库：类型标签与动态作者筛选 |
+| --- | --- |
+| ![内容源](./img/desktop/003.png) | ![本地库](./img/desktop/004.png) |
 
-## Feature Overview
+| 本地库文件详情 | 设置：目录、命名、账号与附件 |
+| --- | --- |
+| ![文件详情](./img/desktop/005.png) | ![设置](./img/desktop/006.png) |
 
-### Supported
+## 主要功能
 
-| Feature | Description |
-|---------|-------------|
-| Single video download | `/video/{aweme_id}` |
-| Single image-note download | `/note/{note_id}` and `/gallery/{note_id}` |
-| Single collection download | `/collection/{mix_id}` and `/mix/{mix_id}` |
-| Single music download | `/music/{music_id}` (prefers direct audio, fallback to first related aweme) |
-| Short link parsing | `https://v.douyin.com/...`, `v.iesdouyin.com`, bare hosts |
-| Profile batch download | `/user/{sec_uid}` + `mode: [post, like, mix, music]` |
-| Logged-in favorites collections | `/user/self?showTab=favorite_collection` + `mode: [collect, collectmix]` |
-| No-watermark preferred | Automatically selects watermark-free video source |
-| Highest-quality selection | Auto-picks highest bitrate from `video.bit_rate` ladder (video + live-photo) |
-| **Live stream recording** | `live.douyin.com/{room_id}` → FLV/HLS, preserves partial data on stream end |
-| **Comments collection** | Per-aweme comments (+ optional replies) saved as `*_comments.json` |
-| **Hot search snapshot** | `--hot-board [N]` dumps to JSONL |
-| **REST API server mode** | `--serve --serve-port 8000` (optional `fastapi + uvicorn`) |
-| **Notification push** | Bark / Telegram / Webhook on download completion |
-| Extra assets | Cover, music, avatar, JSON metadata |
-| Video transcription | Optional, using OpenAI Transcriptions API |
-| Concurrent downloads | Configurable concurrency, default 5 |
-| Retry with backoff | Exponential backoff (1s, 2s, 5s) |
-| Rate limiting | Default 2 req/s |
-| SQLite deduplication | Database + local file dual dedup |
-| Incremental downloads | `increase.post/like/mix/music` |
-| Time filters | `start_time` / `end_time` |
-| Browser fallback | Launches browser when pagination is blocked, manual CAPTCHA supported |
-| Download integrity check | Content-Length validation, auto-cleanup of incomplete files |
-| Progress display | Rich progress bars, supports `progress.quiet_logs` quiet mode |
-| Docker deployment | Dockerfile included |
-| CI/CD | GitHub Actions for testing and linting |
+- 链接下载：支持抖音视频、图文、合集、音乐链接，也支持完整分享文案自动提取链接。
+- 批量下载：每行一个链接或分享文案，统一创建任务。
+- 内容源：登录后同步“我的关注”和“我的收藏”，也可以粘贴作者主页链接进入预览。
+- 作者预览：从作者卡片进入作品、喜欢、合集、音乐列表，筛选后选择单个或多个内容下载。
+- 任务队列：任务创建、运行、完成、失败状态持久化保存，进度按任务实时展示。
+- 本地库：SQLite 保存下载记录，支持作者下拉动态更新、手动输入作者、标题搜索和视频/图文/音乐/直播标签筛选。
+- 文件详情：双击本地库记录后在该记录下展开详情，只保留一个详情面板，可直接复制路径。
+- 直播录制：支持直播分享文案或 `live.douyin.com` 链接，录制完成后可自动转 MP4，FLV 源文件默认保留。
+- 媒体附件：可选择保存音乐、封面、头像、JSON、作品文案。
+- 评论采集：可选择下载作品评论 JSON，并可包含评论回复。
+- 命名模板：支持下载目录、作者目录、文件模板、单作品文件夹模板配置。
+- 账号登录：点击“一键登录抖音”打开登录浏览器，登录成功后自动提取 Cookie。
 
-### Current Limitations
+## 快速运行
 
-- Browser fallback is fully validated for `post`; `like/mix/music` currently relies on API pagination
-- `number.allmix` / `increase.allmix` are retained as compatibility aliases and normalized to `mix`
-- `collect` / `collectmix` currently work for the account represented by the logged-in cookies only
-- `collect` / `collectmix` must be used alone and cannot be combined with `post` / `like` / `mix` / `music`
-- `increase` currently applies to `post` / `like` / `mix` / `music`; favorites collection modes do not support incremental stop
-- Live stream recording saves FLV natively; HLS sources only save the playlist (use ffmpeg for playable output)
-- The webcast room endpoint is not verified against every live scenario — treat as experimental
+Windows PowerShell：
 
-## Quick Start
+```powershell
+git clone https://github.com/guichenlv30/dy-downloader.git
+cd dy-downloader
 
-### 1) Requirements
+python -m venv .venv
+.\.venv\Scripts\activate
 
-- Python 3.8+
-- macOS / Linux / Windows
-
-### 2) Install dependencies
-
-```bash
+python -m pip install -U pip
 pip install -r requirements.txt
+python -m playwright install chromium
+
+python run.py --serve --serve-host 127.0.0.1 --serve-port 8000
 ```
 
-For browser fallback and automatic cookie capture:
+macOS / Linux：
 
 ```bash
-pip install playwright
+git clone https://github.com/guichenlv30/dy-downloader.git
+cd dy-downloader
+
+python3 -m venv .venv
+source .venv/bin/activate
+
+python -m pip install -U pip
+pip install -r requirements.txt
 python -m playwright install chromium
+
+python run.py --serve --serve-host 127.0.0.1 --serve-port 8000
 ```
 
-### 3) Start the web UI
+打开：
+
+```text
+http://127.0.0.1:8000
+```
+
+## 运行数据
+
+这些文件和目录会按需自动生成，不需要手动创建，也不会提交到仓库：
+
+- `config.yml`：本地配置。
+- `.cookies.json`：登录后自动提取的 Cookie。
+- `data/dy_downloader.db`：任务、本地库和下载历史数据库。
+- `data/Downloaded/`：默认下载目录。
+- `logs/`：运行日志。
+- `.venv/`：Python 虚拟环境。
+
+仓库只保留源码、示例配置和文档截图。真实 Cookie、数据库、下载内容、日志和本机配置均已加入 `.gitignore` / `.dockerignore`。
+
+## 常用命令
+
+启动 Web 服务：
 
 ```bash
 python run.py --serve --serve-host 127.0.0.1 --serve-port 8000
 ```
 
-On first run, `config.yml`, `data/`, `data/dy_downloader.db`, download folders, and logs are generated automatically. Cookies are not generated until you log in.
-
-### 4) Log in
-
-Open `http://127.0.0.1:8000`, click the login button, complete Douyin login in the opened browser, and cookies will be saved to the ignored runtime cookie file automatically.
-
-### 5) Docker deployment (optional)
+运行测试：
 
 ```bash
-docker build -t dy-downloader .
-docker run -v $(pwd)/data:/app/data dy-downloader
+python -m pytest
 ```
 
-## Minimal Working Config
-
-```yaml
-link:
-  - https://www.douyin.com/user/MS4wLjABAAAAxxxx
-
-path: ./data/Downloaded/
-mode:
-  - post
-
-number:
-  post: 0
-  collect: 0
-  collectmix: 0
-
-thread: 5
-retry_times: 3
-proxy: ""
-database: true
-database_path: ./data/dy_downloader.db
-
-progress:
-  quiet_logs: true
-
-browser_fallback:
-  enabled: true
-  headless: false
-  max_scrolls: 240
-  idle_rounds: 8
-  wait_timeout_seconds: 600
-
-transcript:
-  enabled: false
-  model: gpt-4o-mini-transcribe
-  output_dir: ""
-  response_formats: ["txt", "json"]
-  api_url: https://api.openai.com/v1/audio/transcriptions
-  api_key_env: OPENAI_API_KEY
-  api_key: ""
-```
-
-## Usage
-
-### Run with a config file
+检查前端入口是否可访问：
 
 ```bash
-python run.py -c config.yml
+python -m pytest tests/test_server.py::test_frontend_root_and_static_assets
 ```
 
-### Append CLI arguments
-
-```bash
-python run.py -c config.yml \
-  -u "https://www.douyin.com/video/7604129988555574538" \
-  -t 8 \
-  -p ./Downloaded
-```
-
-### Arguments
-
-| Argument | Description |
-|----------|-------------|
-| `-u, --url` | Append download link(s), can be repeated |
-| `-c, --config` | Specify config file (default: `config.yml`) |
-| `-p, --path` | Specify download directory |
-| `-t, --thread` | Specify concurrency |
-| `--show-warnings` | Show warning/error logs |
-| `-v, --verbose` | Show info/warning/error logs |
-| `--hot-board [N]` | Fetch Douyin hot search board and write JSONL; optional top-N |
-| `--serve` | Run as REST API server (requires `pip install fastapi uvicorn`) |
-| `--serve-host HOST` | REST server listen host (default 127.0.0.1) |
-| `--serve-port PORT` | REST server listen port (default 8000) |
-| `--version` | Show version number |
-
-## Typical Scenarios
-
-### Download one video
-
-```yaml
-link:
-  - https://www.douyin.com/video/7604129988555574538
-```
-
-### Download one image-note
-
-```yaml
-link:
-  - https://www.douyin.com/note/7341234567890123456
-```
-
-### Download a collection
-
-```yaml
-link:
-  - https://www.douyin.com/collection/7341234567890123456
-```
-
-### Download a music track
-
-```yaml
-link:
-  - https://www.douyin.com/music/7341234567890123456
-```
-
-### Batch download a creator's posts
-
-```yaml
-link:
-  - https://www.douyin.com/user/MS4wLjABAAAAxxxx
-mode:
-  - post
-number:
-  post: 50
-```
-
-### Batch download a creator's liked posts
-
-```yaml
-link:
-  - https://www.douyin.com/user/MS4wLjABAAAAxxxx
-mode:
-  - like
-number:
-  like: 0    # 0 means download all
-```
-
-### Download multiple modes at once
-
-```yaml
-link:
-  - https://www.douyin.com/user/MS4wLjABAAAAxxxx
-mode:
-  - post
-  - like
-  - mix
-  - music
-```
-
-Cross-mode deduplication: the same aweme_id won't be downloaded twice across different modes.
-
-### Download logged-in favorites collection items
-
-```yaml
-link:
-  - https://www.douyin.com/user/self?showTab=favorite_collection
-mode:
-  - collect
-number:
-  collect: 0
-```
-
-### Download logged-in collected mixes
-
-```yaml
-link:
-  - https://www.douyin.com/user/self?showTab=favorite_collection
-mode:
-  - collectmix
-number:
-  collectmix: 0
-```
-
-### Record a live stream (experimental)
-
-```yaml
-link:
-  - https://live.douyin.com/123456789   # or /follow/live/{room_id}
-live:
-  max_duration_seconds: 3600   # 0 = record until broadcaster ends
-  chunk_size: 65536
-  idle_timeout_seconds: 30
-```
-
-The recorder saves an FLV file under `Downloaded/{author}/live/` plus a `*_room.json`
-metadata snapshot. If the broadcaster ends the stream, network goes idle, or you
-Ctrl+C, any already-recorded bytes are preserved (the `.tmp` file is promoted to
-the final file).
-
-### Collect comments per aweme
-
-```yaml
-comments:
-  enabled: true
-  include_replies: false   # true will fetch each comment's second-level replies (extra API calls)
-  max_comments: 500        # 0 = no cap
-  page_size: 20
-```
-
-Generates a `{date}_{title}_{aweme_id}_comments.json` next to the media file.
-
-### Dump the hot search board
-
-```bash
-python run.py --hot-board 30 -p ./Downloaded
-# Output: ./Downloaded/hot_board/20260424_221530.jsonl
-```
-
-### Run as REST API server
-
-```bash
-pip install fastapi uvicorn       # one-time optional dep
-python run.py --serve --serve-port 8000
-```
-
-Endpoints:
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/v1/download` | Submit `{"url": "..."}`, returns `{job_id, status}` |
-| GET | `/api/v1/jobs/{job_id}` | Get a specific job's status/counts |
-| GET | `/api/v1/jobs` | List recent jobs (TTL + capacity capped) |
-| GET | `/api/v1/health` | Health probe |
-
-Finished jobs are pruned by TTL (default 24h) and max-jobs (default 500) — in-flight jobs are never pruned. Configure via `server.max_jobs` / `server.job_ttl_seconds`.
-
-### Send a notification on completion
-
-```yaml
-notifications:
-  enabled: true
-  on_success: true
-  on_failure: true
-  providers:
-    - type: bark
-      url: https://api.day.app/YOUR_DEVICE_KEY
-      sound: bell
-    - type: telegram
-      bot_token: "123456:ABC..."
-      chat_id: "987654321"
-    - type: webhook                 # works with 企业微信/飞书/钉钉 bot URLs too
-      url: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx
-      extra_body:
-        msgtype: text
-```
-
-All enabled providers are notified in parallel; a failing provider never blocks the download flow.
-
-
-### Incremental download (only new items)
-
-```yaml
-increase:
-  post: true
-database: true    # incremental mode requires database
-```
-
-### Full crawl (no item limit)
-
-```yaml
-number:
-  post: 0
-```
-
-## Optional Feature: Video Transcription (`transcript`)
-
-Current behavior applies to **video items only** (image-note items do not generate transcripts).
-
-### 1) Enable in config
-
-```yaml
-transcript:
-  enabled: true
-  model: gpt-4o-mini-transcribe
-  output_dir: ""        # empty: same folder as video; non-empty: mirrored to target dir
-  response_formats:
-    - txt
-    - json
-  api_key_env: OPENAI_API_KEY
-  api_key: ""           # can be set directly, or via environment variable
-```
-
-Recommended to provide key through environment variable:
-
-```bash
-export OPENAI_API_KEY="sk-xxxx"
-```
-
-### 2) Output files
-
-When enabled, it generates:
-
-- `xxx.transcript.txt`
-- `xxx.transcript.json`
-
-If `database: true`, job status is also recorded in SQLite table `transcript_job` (`success/failed/skipped`).
-
-## Testing
-
-Recommended:
-
-```bash
-python3 -m pytest -q
-```
-
-Plain `pytest` is also supported now:
-
-```bash
-pytest -q
-```
-
-## Key Config Fields
-
-| Field | Description |
-|-------|-------------|
-| `mode` | Supports `post`/`like`/`mix`/`music`; logged-in favorites mode additionally supports standalone `collect`/`collectmix` |
-| `number.post/like/mix/music/collect/collectmix` | Per-mode download limit, 0 = unlimited |
-| `increase.post/like/mix/music` | Per-mode incremental toggle |
-| `start_time` / `end_time` | Time filter (format: `YYYY-MM-DD`) |
-| `folderstyle` | Create per-item subdirectories |
-| `browser_fallback.*` | Browser fallback for `post` when pagination is restricted |
-| `progress.quiet_logs` | Quiet logs during progress stage |
-| `transcript.*` | Optional transcription after video download |
-| `comments.*` | Per-aweme comments collection (opt-in) |
-| `live.*` | Live stream recording options (max_duration_seconds / chunk_size / idle_timeout_seconds) |
-| `notifications.*` | Bark/Telegram/Webhook push on completion |
-| `server.*` | REST API server tuning (max_jobs, job_ttl_seconds) |
-| `proxy` | Optional HTTP/HTTPS proxy setting |
-| `database` | Enable SQLite deduplication and history |
-| `database_path` | SQLite path, default is `dy_downloader.db` in the current working directory |
-| `thread` | Concurrent download count |
-| `retry_times` | Retry count on failure |
-
-## Output Structure
-
-Default with `folderstyle: true` and `database_path: dy_downloader.db`:
-
-```text
-workspace/
-├── config.yml
-├── dy_downloader.db          # default location when database: true
-└── Downloaded/
-    ├── download_manifest.jsonl
-    ├── hot_board/                # when --hot-board is used
-    │   └── 20260424_221530.jsonl
-    └── AuthorName/
-        ├── post/
-        │   └── 2024-02-07_Title_aweme_id/
-        │       ├── ...mp4
-        │       ├── ..._cover.jpg
-        │       ├── ..._music.mp3
-        │       ├── ..._data.json
-        │       ├── ..._avatar.jpg
-        │       ├── ..._comments.json    # when comments.enabled
-        │       ├── ...transcript.txt
-        │       └── ...transcript.json
-        ├── like/
-        │   └── ...
-        ├── mix/
-        │   └── ...
-        ├── music/
-        │   └── ...
-        ├── collect/
-        │   └── ...
-        ├── collectmix/
-        │   └── ...
-        └── live/                 # when recording live streams
-            └── 2026-04-24_2215_LiveTitle_RoomId/
-                ├── ...flv
-                └── ..._room.json
-```
-
-## Re-downloading Content
-
-The program uses a **database record + local file** dual check to decide whether to skip already-downloaded content. To force re-download, you need to clean up accordingly:
-
-### Re-download a specific item
-
-```bash
-# Delete local files (folder name contains the aweme_id)
-rm -rf Downloaded/AuthorName/post/*_<aweme_id>/
-
-# Delete database record
-sqlite3 data/dy_downloader.db "DELETE FROM aweme WHERE aweme_id = '<aweme_id>';"
-```
-
-### Re-download all items from a specific author
-
-```bash
-rm -rf Downloaded/AuthorName/
-sqlite3 data/dy_downloader.db "DELETE FROM aweme WHERE author_name = 'AuthorName';"
-```
-
-### Full reset (re-download everything)
-
-```bash
-rm -rf Downloaded/
-rm dy_downloader.db
-```
-
-> **Note:** Deleting only the database but keeping files will NOT trigger re-download — the program scans local filenames for aweme_id to detect existing downloads. Deleting only files but keeping the database WILL trigger re-download (the program treats "in DB but missing locally" as needing retry).
-
-## FAQ
-
-### 1) Why do I only get around 20 posts?
-
-This is a common pagination risk-control behavior. Make sure:
-
-- `browser_fallback.enabled: true`
-- `browser_fallback.headless: false`
-- complete verification manually in the browser popup, and do not close it too early
-
-### 2) Why is the progress output noisy/repeated?
-
-By default, `progress.quiet_logs: true` suppresses logs during progress stage.  
-Use `--show-warnings` or `-v` temporarily when debugging.
-
-### 3) What if cookies are expired?
-
-Open the web UI, go to Settings, clear the login state, and log in again. The refreshed cookies are written to the ignored runtime cookie file automatically.
-
-### 4) Why are transcript files not generated?
-
-Check in order:
-
-- whether `transcript.enabled` is `true`
-- whether downloaded items are videos (image-notes are not transcribed)
-- whether `OPENAI_API_KEY` (or `transcript.api_key`) is valid
-- whether `response_formats` includes `txt` or `json`
-
-### 5) How to view download history?
-
-```bash
-sqlite3 data/dy_downloader.db "SELECT aweme_id, title, author_name, datetime(download_time, 'unixepoch', 'localtime') FROM aweme ORDER BY download_time DESC LIMIT 20;"
-```
-
-## Disclaimer
-
-This project is for technical research, learning, and personal data management only. Please use it legally and responsibly:
-
-- Do not use it to infringe others' privacy, copyright, or other legal rights
-- Do not use it for any illegal purpose
-- Users are solely responsible for all risks and liabilities arising from usage
-- If platform policies or interfaces change and features break, this is a normal technical risk
-
-By continuing to use this project, you acknowledge and accept the statements above.
+## 注意事项
+
+- 抖音接口可能因登录状态、验证、风控或接口变更导致部分功能暂时不可用。
+- Cookie 属于敏感信息，只保存在本地，不要上传、截图或分享。
+- 请只下载你有权访问和保存的内容，并遵守平台规则与版权要求。
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.
-
-## Friendly Links
-
-- [LINUX DO](https://linux.do/)
+MIT License. 本项目保留上游项目的许可声明。

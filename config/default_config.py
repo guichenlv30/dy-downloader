@@ -7,6 +7,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "cover": True,
     "avatar": True,
     "json": True,
+    "save_desc": False,
     "start_time": "",
     "end_time": "",
     "folderstyle": True,
@@ -95,6 +96,8 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "max_duration_seconds": 0,  # 0 = 直到流结束
         "chunk_size": 65536,
         "idle_timeout_seconds": 30,
+        "convert_to_mp4": True,
+        "keep_source_flv": True,
     },
     # REST API 服务模式（可选，需 fastapi + uvicorn）。
     "server": {

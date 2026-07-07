@@ -546,6 +546,7 @@ async function parseUrl() {
     const parsedType = result.parsed?.type;
     if (result.url) $("#urlInput").value = result.url;
     $("#parseBadge").textContent = result.supported ? "可下载" : "未支持";
+    renderDownloadLiveOptions(parsedType === "live" && result.supported);
     $("#parseResult").classList.toggle("muted", false);
     $("#parseResult").innerHTML = `
       <strong>${result.supported ? "已识别" : "未识别"}</strong>
@@ -555,10 +556,36 @@ async function parseUrl() {
     return result;
   } catch (error) {
     $("#parseBadge").textContent = "检测失败";
+    renderDownloadLiveOptions(false);
     $("#parseResult").textContent = error.message;
     toast(`检测失败：${error.message}`, "error");
     return null;
   }
+}
+
+function quickLiveOverridesFromForm() {
+  return {
+    live: {
+      max_duration_seconds: Math.max(0, Number($("#quickLiveMaxDuration").value || 0)),
+      idle_timeout_seconds: Math.max(1, Number($("#quickLiveIdleTimeout").value || 30)),
+      convert_to_mp4: $("#quickLiveConvertToMp4") ? $("#quickLiveConvertToMp4").checked : true,
+      keep_source_flv: $("#quickLiveKeepSourceFlv") ? $("#quickLiveKeepSourceFlv").checked : true,
+    },
+  };
+}
+
+function fillQuickLiveFormFromConfig() {
+  const live = state.config?.live || {};
+  if ($("#quickLiveMaxDuration")) $("#quickLiveMaxDuration").value = live.max_duration_seconds ?? 0;
+  if ($("#quickLiveIdleTimeout")) $("#quickLiveIdleTimeout").value = live.idle_timeout_seconds ?? 30;
+  if ($("#quickLiveConvertToMp4")) $("#quickLiveConvertToMp4").checked = live.convert_to_mp4 !== false;
+  if ($("#quickLiveKeepSourceFlv")) $("#quickLiveKeepSourceFlv").checked = live.keep_source_flv !== false;
+}
+
+function renderDownloadLiveOptions(show) {
+  const panel = $("#downloadLiveOptions");
+  if (!panel) return;
+  panel.classList.toggle("hidden", !show);
 }
 
 async function createDownload(rawUrl, overrides = currentModeOverrides()) {
@@ -582,7 +609,15 @@ async function startDownload() {
   $("#urlInput").value = cleaned;
   $("#startDownloadBtn").disabled = true;
   try {
-    await createDownload(cleaned);
+    let parsed = state.parsed;
+    if (!parsed || parsed.url !== cleaned) {
+      parsed = await parseUrl();
+      if (!parsed) return;
+    }
+    const isLive = parsed?.supported && parsed?.parsed?.type === "live";
+    const submitUrl = parsed?.url || cleaned;
+    $("#urlInput").value = submitUrl;
+    await createDownload(submitUrl, isLive ? quickLiveOverridesFromForm() : currentModeOverrides());
   } catch (error) {
     toast(`创建失败：${error.message}`, "error");
   } finally {
@@ -1084,6 +1119,8 @@ function liveOverridesFromForm() {
     live: {
       max_duration_seconds: Math.max(0, Number($("#liveMaxDuration").value || 0)),
       idle_timeout_seconds: Math.max(1, Number($("#liveIdleTimeout").value || 30)),
+      convert_to_mp4: $("#liveConvertToMp4") ? $("#liveConvertToMp4").checked : true,
+      keep_source_flv: $("#liveKeepSourceFlv") ? $("#liveKeepSourceFlv").checked : true,
     },
   };
 }
@@ -1092,6 +1129,8 @@ function fillLiveFormFromConfig() {
   const live = state.config?.live || {};
   if ($("#liveMaxDuration")) $("#liveMaxDuration").value = live.max_duration_seconds ?? 0;
   if ($("#liveIdleTimeout")) $("#liveIdleTimeout").value = live.idle_timeout_seconds ?? 30;
+  if ($("#liveConvertToMp4")) $("#liveConvertToMp4").checked = live.convert_to_mp4 !== false;
+  if ($("#liveKeepSourceFlv")) $("#liveKeepSourceFlv").checked = live.keep_source_flv !== false;
 }
 
 function isLiveJob(job) {
@@ -1709,6 +1748,9 @@ function fillSettingsForm() {
   $("#settingMaxComments").value = cfg.comments?.max_comments ?? 0;
   $("#settingLiveMaxDuration").value = cfg.live?.max_duration_seconds ?? 0;
   $("#settingLiveIdleTimeout").value = cfg.live?.idle_timeout_seconds ?? 30;
+  $("#settingLiveConvertToMp4").checked = cfg.live?.convert_to_mp4 !== false;
+  $("#settingLiveKeepSourceFlv").checked = cfg.live?.keep_source_flv !== false;
+  fillQuickLiveFormFromConfig();
   fillLiveFormFromConfig();
 }
 
@@ -1737,6 +1779,8 @@ async function saveSettings() {
     live: {
       max_duration_seconds: Number($("#settingLiveMaxDuration").value || 0),
       idle_timeout_seconds: Number($("#settingLiveIdleTimeout").value || 30),
+      convert_to_mp4: $("#settingLiveConvertToMp4").checked,
+      keep_source_flv: $("#settingLiveKeepSourceFlv").checked,
     },
   };
   $("#saveSettingsBtn").disabled = true;
@@ -1944,6 +1988,13 @@ function bindEvents() {
   });
   $("#manageAccountBtn").addEventListener("click", () => showView("settings"));
   $("#refreshBtn").addEventListener("click", refreshCurrentView);
+  $("#urlInput").addEventListener("input", () => {
+    state.parsed = null;
+    $("#parseBadge").textContent = "待检测";
+    $("#parseResult").classList.add("muted");
+    $("#parseResult").textContent = "等待输入";
+    renderDownloadLiveOptions(false);
+  });
   $("#parseBtn").addEventListener("click", parseUrl);
   $("#startDownloadBtn").addEventListener("click", startDownload);
   const selectDefaultModesBtn = $("#selectDefaultModesBtn");

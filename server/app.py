@@ -62,6 +62,7 @@ class SettingsPatch(BaseModel):
     cover: Optional[bool] = None
     avatar: Optional[bool] = None
     json_: Optional[bool] = Field(default=None, alias="json")
+    save_desc: Optional[bool] = None
     download_pinned: Optional[bool] = None
     folderstyle: Optional[bool] = None
     group_by_mode: Optional[bool] = None
@@ -108,6 +109,16 @@ PRIMARY_MEDIA_SUFFIXES = {
     "gallery": {".jpg", ".jpeg", ".png", ".webp", ".gif", ".mp4", ".m4v", ".mov"},
     "music": {".mp3", ".m4a", ".aac", ".wav", ".flac"},
 }
+
+
+def _coerce_bool(value: Any, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
 
 
 class _ServerDeps:
@@ -342,6 +353,7 @@ def _config_summary(config: ConfigLoader, deps: _ServerDeps) -> Dict[str, Any]:
             "cover": bool(config.get("cover")),
             "avatar": bool(config.get("avatar")),
             "json": bool(config.get("json")),
+            "save_desc": bool(config.get("save_desc")),
             "download_pinned": bool(config.get("download_pinned")),
         },
         "naming": {
@@ -373,16 +385,30 @@ def _config_summary(config: ConfigLoader, deps: _ServerDeps) -> Dict[str, Any]:
 def _compact_user(user: Dict[str, Any]) -> Dict[str, Any]:
     avatar = user.get("avatar_thumb") or user.get("avatar_medium") or user.get("avatar_larger") or {}
     avatar_urls = avatar.get("url_list") if isinstance(avatar, dict) else []
+    stats = user.get("statistics") if isinstance(user.get("statistics"), dict) else {}
+    mplatform = user.get("mplatform_followers_count") if isinstance(user.get("mplatform_followers_count"), dict) else {}
     return {
         "uid": user.get("uid") or user.get("short_id") or "",
+        "unique_id": user.get("unique_id") or "",
+        "short_id": user.get("short_id") or "",
         "sec_uid": user.get("sec_uid") or user.get("sec_user_id") or "",
         "nickname": user.get("nickname") or "未命名账号",
         "signature": user.get("signature") or "",
         "avatar": avatar_urls[0] if isinstance(avatar_urls, list) and avatar_urls else "",
-        "follower_count": int(user.get("follower_count") or 0),
-        "following_count": int(user.get("following_count") or 0),
-        "aweme_count": int(user.get("aweme_count") or 0),
-        "favoriting_count": int(user.get("favoriting_count") or 0),
+        "follower_count": _first_positive_int(user.get("follower_count"), stats.get("follower_count")),
+        "following_count": _first_positive_int(user.get("following_count"), stats.get("following_count")),
+        "aweme_count": _first_positive_int(
+            user.get("aweme_count"),
+            user.get("video_count"),
+            user.get("post_count"),
+            stats.get("aweme_count"),
+            stats.get("video_count"),
+            stats.get("post_count"),
+            mplatform.get("aweme_count"),
+            mplatform.get("video_count"),
+            mplatform.get("post_count"),
+        ),
+        "favoriting_count": _first_positive_int(user.get("favoriting_count"), stats.get("favoriting_count")),
     }
 
 
@@ -608,6 +634,9 @@ def _download_overrides(req: DownloadRequest) -> Dict[str, Any]:
                 1,
                 int(float(idle_timeout if idle_timeout is not None else 30)),
             )
+        for key in ("convert_to_mp4", "keep_source_flv"):
+            if key in live:
+                current_live[key] = _coerce_bool(live.get(key), default=True)
         if current_live:
             overrides["live"] = current_live
     return overrides
@@ -676,6 +705,8 @@ def _apply_settings_patch(config: ConfigLoader, deps: _ServerDeps, patch: Settin
                 current_live[key] = max(1, int(float(value if value is not None else 30)))
             elif key == "chunk_size":
                 current_live[key] = max(1024, int(value or 65536))
+            elif key in {"convert_to_mp4", "keep_source_flv"}:
+                current_live[key] = _coerce_bool(value, default=True)
         updates["live"] = current_live
 
     config.update(**updates)
@@ -823,6 +854,15 @@ def build_app(config: ConfigLoader) -> FastAPI:
     app.state.config = config
     static_dir = Path(__file__).resolve().parent / "static"
     index_file = static_dir / "index.html"
+
+    @app.middleware("http")
+    async def no_cache_frontend_assets(request, call_next):
+        response = await call_next(request)
+        if request.url.path == "/" or request.url.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
 
     @app.get("/api/v1/health")
     async def health() -> Dict[str, str]:
@@ -1239,6 +1279,7 @@ def build_app(config: ConfigLoader) -> FastAPI:
         aweme_type: Optional[str] = None,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
+        job_id: Optional[str] = None,
         sort: str = "download_time",
     ) -> Dict[str, Any]:
         db = await _query_database(config)
@@ -1249,6 +1290,7 @@ def build_app(config: ConfigLoader) -> FastAPI:
                 author=author,
                 title=title,
                 aweme_type=aweme_type or None,
+                job_id=job_id,
                 date_from=_date_to_timestamp(date_from),
                 date_to=_date_to_timestamp(date_to, end_of_day=True),
                 sort=sort,

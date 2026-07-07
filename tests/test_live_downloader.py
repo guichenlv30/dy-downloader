@@ -50,7 +50,7 @@ class _FakeSession:
 
 def _build_downloader(tmp_path):
     config = ConfigLoader()
-    config.update(path=str(tmp_path))
+    config.update(path=str(tmp_path), live={"convert_to_mp4": False, "keep_source_flv": True})
 
     file_manager = FileManager(str(tmp_path))
     cookie_manager = CookieManager(str(tmp_path / ".cookies.json"))
@@ -249,6 +249,89 @@ async def test_live_downloader_records_archive_entry(tmp_path):
     assert item["file_path"].endswith(".flv")
     assert Path(item["file_path"]).exists()
     assert item["cover_urls"] == ["https://img.example/avatar.jpg"]
+
+    await downloader.database.close()
+    await api_client.close()
+
+
+@pytest.mark.asyncio
+async def test_live_downloader_converts_to_mp4_and_keeps_flv(tmp_path, monkeypatch):
+    downloader, api_client = _build_downloader_with_database(tmp_path)
+    await downloader.database.initialize()
+    downloader.config.update(live={"convert_to_mp4": True, "keep_source_flv": True})
+
+    async def fake_get_live_room_info(room_id, *, sec_user_id=""):
+        return {
+            "room": {
+                "status": 2,
+                "title": "转换测试",
+                "stream_url": {"flv_pull_url": {"ORIGIN": "https://cdn/live.flv"}},
+            },
+            "user": {"uid": "anchor-1", "sec_uid": "sec-anchor-1", "nickname": "主播"},
+        }
+
+    async def fake_get_session():
+        return _FakeSession([b"abc", b"def"])
+
+    async def fake_convert(source_path, mp4_path):
+        mp4_path.write_bytes(source_path.read_bytes())
+        return True
+
+    api_client.get_live_room_info = fake_get_live_room_info
+    api_client.get_session = fake_get_session
+    monkeypatch.setattr(downloader, "_convert_flv_to_mp4", fake_convert)
+
+    result = await downloader.download({"room_id": "42"})
+
+    assert result.success == 1
+    flvs = list(tmp_path.rglob("*.flv"))
+    mp4s = list(tmp_path.rglob("*.mp4"))
+    assert len(flvs) == 1
+    assert len(mp4s) == 1
+    history = await downloader.database.get_aweme_history(aweme_type="live")
+    item = history["items"][0]
+    assert item["file_path"].endswith(".mp4")
+    assert Path(item["file_path"]).exists()
+
+    await downloader.database.close()
+    await api_client.close()
+
+
+@pytest.mark.asyncio
+async def test_live_downloader_converts_to_mp4_and_removes_flv(tmp_path, monkeypatch):
+    downloader, api_client = _build_downloader_with_database(tmp_path)
+    await downloader.database.initialize()
+    downloader.config.update(live={"convert_to_mp4": True, "keep_source_flv": False})
+
+    async def fake_get_live_room_info(room_id, *, sec_user_id=""):
+        return {
+            "room": {
+                "status": 2,
+                "title": "删除源文件测试",
+                "stream_url": {"flv_pull_url": {"ORIGIN": "https://cdn/live.flv"}},
+            },
+            "user": {"uid": "anchor-1", "sec_uid": "sec-anchor-1", "nickname": "主播"},
+        }
+
+    async def fake_get_session():
+        return _FakeSession([b"abc", b"def"])
+
+    async def fake_convert(source_path, mp4_path):
+        mp4_path.write_bytes(source_path.read_bytes())
+        return True
+
+    api_client.get_live_room_info = fake_get_live_room_info
+    api_client.get_session = fake_get_session
+    monkeypatch.setattr(downloader, "_convert_flv_to_mp4", fake_convert)
+
+    result = await downloader.download({"room_id": "42"})
+
+    assert result.success == 1
+    assert list(tmp_path.rglob("*.flv")) == []
+    mp4s = list(tmp_path.rglob("*.mp4"))
+    assert len(mp4s) == 1
+    history = await downloader.database.get_aweme_history(aweme_type="live")
+    assert history["items"][0]["file_path"].endswith(".mp4")
 
     await downloader.database.close()
     await api_client.close()

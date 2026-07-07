@@ -17,7 +17,7 @@ except ImportError:  # pragma: no cover
 
 
 from config import ConfigLoader
-from server.app import build_app
+from server.app import _compact_user, build_app
 from server.jobs import JobManager
 from storage import Database
 
@@ -38,6 +38,21 @@ def make_config(tmp_path, **updates):
     if updates:
         config.update(**updates)
     return config
+
+
+def test_compact_user_uses_alternate_aweme_count_fields():
+    data = _compact_user(
+        {
+            "uid": "u1",
+            "sec_uid": "sec",
+            "nickname": "author",
+            "video_count": 3,
+            "statistics": {"follower_count": 9},
+        }
+    )
+
+    assert data["aweme_count"] == 3
+    assert data["follower_count"] == 9
 
 
 @pytest.mark.asyncio
@@ -328,11 +343,19 @@ def test_frontend_root_and_static_assets(tmp_path):
         root = client.get("/")
         assert root.status_code == 200
         assert "Douzy" in root.text
-        assert "/static/app.js" in root.text
+        assert "/static/vendor/vue.global.prod.js" in root.text
+        assert "/static/js/app.js" in root.text
+        assert "/static/css/tokens.css" in root.text
 
-        js = client.get("/static/app.js")
-        assert js.status_code == 200
-        assert "DOUYIN_URL_RE" in js.text
+        vue_app = client.get("/static/js/app.js")
+        assert vue_app.status_code == 200
+        assert "createApp" in vue_app.text
+        assert "innerHTML" not in vue_app.text
+
+        legacy = client.get("/static/index.legacy.html")
+        assert legacy.status_code == 200
+        assert "/static/legacy/app.js" in legacy.text
+        assert "/static/legacy/styles.css" in legacy.text
 
 
 def test_parse_endpoint_extracts_url_from_share_text(tmp_path):
@@ -413,6 +436,7 @@ def test_archive_endpoint_returns_absolute_copy_path_without_work_leaf(tmp_path)
                     "2026-06-24_自己不经意的一次趁虚而入，竟然就从新夺回了正宫娘娘的位置 _漫画解说 _漫画_7654662824597212467"
                 ),
                 "metadata": "{}",
+                "job_id": "job-archive",
             }
         )
         await db.close()
@@ -425,6 +449,10 @@ def test_archive_endpoint_returns_absolute_copy_path_without_work_leaf(tmp_path)
         assert resp.status_code == 200
         item = resp.json()["items"][0]
         assert item["file_path"].endswith("7654662824597212467")
+        resp = client.get("/api/v1/archive?job_id=job-archive")
+        assert resp.status_code == 200
+        assert resp.json()["total"] == 1
+        assert resp.json()["items"][0]["aweme_id"] == "7654662824597212467"
         assert item["copy_path"] == str(tmp_path / "data" / "Downloaded" / "绮梦说漫" / "mix")
 
 
@@ -762,9 +790,12 @@ def test_config_endpoint_updates_comments_and_live_settings(tmp_path):
                     "include_replies": True,
                     "max_comments": 50,
                 },
+                "save_desc": True,
                 "live": {
                     "max_duration_seconds": 600,
                     "idle_timeout_seconds": 0,
+                    "convert_to_mp4": True,
+                    "keep_source_flv": False,
                 },
             },
         )
@@ -773,8 +804,11 @@ def test_config_endpoint_updates_comments_and_live_settings(tmp_path):
         assert data["comments"]["enabled"] is True
         assert data["comments"]["include_replies"] is True
         assert data["comments"]["max_comments"] == 50
+        assert data["media"]["save_desc"] is True
         assert data["live"]["max_duration_seconds"] == 600
         assert data["live"]["idle_timeout_seconds"] == 1
+        assert data["live"]["convert_to_mp4"] is True
+        assert data["live"]["keep_source_flv"] is False
 
 
 def test_config_endpoint_summarizes_cookies_without_secret_values(tmp_path):

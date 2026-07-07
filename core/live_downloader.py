@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -143,7 +144,7 @@ class LiveDownloader(BaseDownloader):
             )
         except asyncio.CancelledError:
             if target_path.exists():
-                await self._record_live_artifact(
+                await self._finalize_live_artifact(
                     room_id=str(room_id),
                     title=title,
                     author_name=author_name,
@@ -158,7 +159,7 @@ class LiveDownloader(BaseDownloader):
             raise
 
         if ok:
-            await self._record_live_artifact(
+            final_path = await self._finalize_live_artifact(
                 room_id=str(room_id),
                 title=title,
                 author_name=author_name,
@@ -170,8 +171,8 @@ class LiveDownloader(BaseDownloader):
                 quality=quality,
             )
             result.success += 1
-            self._progress_advance_item("success", str(target_path))
-            logger.info("Live recording finished: %s", target_path)
+            self._progress_advance_item("success", str(final_path))
+            logger.info("Live recording finished: %s", final_path)
         else:
             result.failed += 1
             self._progress_advance_item("failed", str(room_id))
@@ -183,6 +184,16 @@ class LiveDownloader(BaseDownloader):
     def _live_config(self) -> Dict[str, Any]:
         cfg = self.config.get("live") or {}
         return cfg if isinstance(cfg, dict) else {}
+
+    def _live_bool(self, key: str, default: bool) -> bool:
+        value = self._live_config().get(key)
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "on"}
+        return bool(value)
 
     def _plan_output_paths(self, author_name: str, title: str, room_id: str) -> Tuple[Path, str]:
         started_at = datetime.now()
@@ -219,6 +230,85 @@ class LiveDownloader(BaseDownloader):
         )
         return save_dir, file_stem
 
+    async def _finalize_live_artifact(
+        self,
+        *,
+        room_id: str,
+        title: str,
+        author_name: str,
+        user: Dict[str, Any],
+        room: Dict[str, Any],
+        info: Dict[str, Any],
+        target_path: Path,
+        meta_path: Path,
+        quality: str,
+    ) -> Path:
+        final_path = target_path
+        source_path: Optional[Path] = None
+
+        if target_path.suffix.lower() == ".flv" and self._live_bool("convert_to_mp4", True):
+            mp4_path = target_path.with_suffix(".mp4")
+            converted = await self._convert_flv_to_mp4(target_path, mp4_path)
+            if converted:
+                final_path = mp4_path
+                if self._live_bool("keep_source_flv", True):
+                    source_path = target_path
+                else:
+                    try:
+                        target_path.unlink(missing_ok=True)
+                    except Exception as exc:
+                        source_path = target_path
+                        logger.warning("Remove source FLV failed: %s", exc)
+                self._progress_update_step("转换 MP4 完成", str(final_path))
+            else:
+                self._progress_update_step("转换 MP4 失败", "已保留 FLV 源文件")
+
+        await self._record_live_artifact(
+            room_id=room_id,
+            title=title,
+            author_name=author_name,
+            user=user,
+            room=room,
+            info=info,
+            target_path=final_path,
+            meta_path=meta_path,
+            quality=quality,
+            source_path=source_path,
+        )
+        return final_path
+
+    async def _convert_flv_to_mp4(self, source_path: Path, mp4_path: Path) -> bool:
+        ffmpeg = shutil.which("ffmpeg")
+        if not ffmpeg:
+            logger.warning("ffmpeg not found; skip live FLV to MP4 conversion")
+            return False
+
+        self._progress_update_step("转换 MP4", mp4_path.name)
+        mp4_path.parent.mkdir(parents=True, exist_ok=True)
+        proc = await asyncio.create_subprocess_exec(
+            ffmpeg,
+            "-y",
+            "-i",
+            str(source_path),
+            "-c",
+            "copy",
+            "-movflags",
+            "+faststart",
+            str(mp4_path),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _stdout, stderr = await proc.communicate()
+        if proc.returncode != 0 or not mp4_path.exists() or mp4_path.stat().st_size <= 0:
+            try:
+                mp4_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            detail = stderr.decode("utf-8", errors="ignore")[-1000:]
+            logger.warning("Live FLV to MP4 conversion failed: %s", detail)
+            return False
+        return True
+
     async def _record_live_artifact(
         self,
         *,
@@ -231,6 +321,7 @@ class LiveDownloader(BaseDownloader):
         target_path: Path,
         meta_path: Path,
         quality: str,
+        source_path: Optional[Path] = None,
     ) -> None:
         if not self.database:
             return
@@ -243,6 +334,7 @@ class LiveDownloader(BaseDownloader):
             "quality": quality,
             "media_path": str(target_path),
             "meta_path": str(meta_path),
+            "source_flv_path": str(source_path) if source_path else "",
             "room": room,
             "user": user,
             "raw": info,
@@ -262,6 +354,10 @@ class LiveDownloader(BaseDownloader):
             "job_id": self.job_id or "",
         }
         await self.database.add_aweme(record)
+        artifact_paths = [target_path]
+        if source_path and source_path != target_path and source_path.exists():
+            artifact_paths.append(source_path)
+        artifact_paths.append(meta_path)
         await self.metadata_handler.append_download_manifest(
             self.file_manager.base_path,
             {
@@ -270,11 +366,8 @@ class LiveDownloader(BaseDownloader):
                 "author_name": author_name,
                 "desc": title,
                 "media_type": "live",
-                "file_names": [target_path.name, meta_path.name],
-                "file_paths": [
-                    self._to_manifest_path(target_path),
-                    self._to_manifest_path(meta_path),
-                ],
+                "file_names": [path.name for path in artifact_paths],
+                "file_paths": [self._to_manifest_path(path) for path in artifact_paths],
             },
         )
 

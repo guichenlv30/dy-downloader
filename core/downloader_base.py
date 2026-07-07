@@ -428,6 +428,14 @@ class BaseDownloader(ABC):
             if await self.metadata_handler.save_metadata(aweme_data, json_path):
                 downloaded_files.append(json_path)
 
+        if self.config.get("save_desc") and desc:
+            desc_path = save_dir / f"{file_stem}_desc.txt"
+            try:
+                desc_path.write_text(desc, encoding="utf-8")
+                downloaded_files.append(desc_path)
+            except OSError as exc:
+                logger.warning("Failed to save desc for %s to %s: %s", aweme_id, desc_path, exc)
+
         comments_cfg = self.config.get("comments") or {}
         if isinstance(comments_cfg, dict) and comments_cfg.get("enabled"):
             from core.comments_collector import CommentsCollector

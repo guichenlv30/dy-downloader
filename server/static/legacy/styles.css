@@ -518,6 +518,14 @@ button:disabled {
   line-height: 1.45;
 }
 
+.download-live-options .filter-row {
+  margin-top: 0;
+}
+
+.download-live-options .field-label {
+  min-width: min(210px, 100%);
+}
+
 .muted {
   color: var(--muted);
 }

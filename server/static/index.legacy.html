@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Douzy Desktop</title>
+    <link rel="stylesheet" href="/static/legacy/styles.css?v=20260704-7" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="window-dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="desktop-label">DESKTOP</div>
+
+        <div class="brand-block">
+          <div class="brand-mark">D</div>
+          <div>
+            <div class="brand-name">Douzy</div>
+            <div class="brand-subtitle">Douyin Downloader</div>
+          </div>
+        </div>
+
+        <section class="account-panel">
+          <div class="account-main">
+            <div class="account-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="img"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z" /></svg>
+            </div>
+            <div>
+              <div class="account-title">抖音账号</div>
+              <div class="account-status"><span id="accountDot" class="status-dot"></span><span id="accountText">检测中</span></div>
+            </div>
+          </div>
+          <button id="manageAccountBtn" class="ghost-button compact" type="button">管理</button>
+        </section>
+
+        <nav class="nav-list" aria-label="主导航">
+          <div class="nav-group">我的抖音</div>
+          <button class="nav-item" type="button" data-view="following"><span class="nav-icon">◎</span><span>我的关注</span></button>
+          <button class="nav-item" type="button" data-view="collections"><span class="nav-icon">◇</span><span>我的收藏</span></button>
+          <button class="nav-item" type="button" data-view="preview"><span class="nav-icon">▦</span><span>作者预览</span></button>
+
+          <div class="nav-group">本地</div>
+          <button class="nav-item active" type="button" data-view="download"><span class="nav-icon">↓</span><span>下载</span></button>
+          <button class="nav-item" type="button" data-view="batch"><span class="nav-icon">≡</span><span>批量下载</span></button>
+          <button class="nav-item" type="button" data-view="live"><span class="nav-icon">●</span><span>直播录制</span></button>
+          <button class="nav-item" type="button" data-view="tasks"><span class="nav-icon">▣</span><span>任务中心</span></button>
+          <button class="nav-item" type="button" data-view="archive"><span class="nav-icon">▤</span><span>下载记录</span></button>
+
+          <div class="nav-group">设置</div>
+          <button class="nav-item" type="button" data-view="settings"><span class="nav-icon">⚙</span><span>设置</span></button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="enable-row">
+            <span class="status-dot live"></span>
+            <span>Douzy 已启用</span>
+          </div>
+          <div class="footer-links"><span>v2.0.0</span></div>
+        </div>
+      </aside>
+
+      <main class="main-surface">
+        <header class="topbar">
+          <div>
+            <div id="viewEyebrow" class="eyebrow">下载</div>
+            <h1 id="viewTitle">下载</h1>
+          </div>
+          <div class="topbar-actions">
+            <div id="apiHealth" class="health-pill"><span class="status-dot"></span><span>连接中</span></div>
+            <button id="refreshBtn" class="icon-button" type="button" title="刷新">
+              <svg viewBox="0 0 24 24" role="img"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6" /></svg>
+            </button>
+          </div>
+        </header>
+
+        <section id="downloadView" class="view active-view" data-title="下载" data-eyebrow="下载链接">
+          <div class="download-layout quick-download-layout">
+            <section class="surface-panel link-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>下载链接</h2>
+                  <p>URL / 分享文案</p>
+                </div>
+                <span id="parseBadge" class="soft-badge">待检测</span>
+              </div>
+              <textarea id="urlInput" class="url-input" rows="7" spellcheck="false" placeholder="粘贴抖音链接或完整分享文案"></textarea>
+              <div class="action-row">
+                <button id="parseBtn" class="secondary-button" type="button">检测链接</button>
+                <button id="startDownloadBtn" class="primary-button" type="button">开始下载</button>
+              </div>
+              <div id="parseResult" class="result-strip muted">等待输入</div>
+              <div id="downloadLiveOptions" class="result-strip download-live-options hidden">
+                <div class="filter-row">
+                  <label class="field-label">最大录制秒数<input id="quickLiveMaxDuration" class="field-input" type="number" min="0" value="0" /></label>
+                  <label class="field-label">空闲超时秒数<input id="quickLiveIdleTimeout" class="field-input" type="number" min="1" value="30" /></label>
+                  <label class="toggle-line"><input id="quickLiveConvertToMp4" type="checkbox" checked />录制后转 MP4</label>
+                  <label class="toggle-line"><input id="quickLiveKeepSourceFlv" type="checkbox" checked />保留 FLV 源文件</label>
+                </div>
+              </div>
+            </section>
+
+            <section class="surface-panel activity-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>当前任务</h2>
+                  <p id="activitySubtitle">空闲</p>
+                </div>
+                <button id="cancelActiveJobBtn" class="ghost-button compact danger" type="button" disabled>取消</button>
+              </div>
+              <div id="activeJobCard" class="job-focus empty-state">
+                <div class="empty-symbol">↓</div>
+                <div>暂无运行任务</div>
+              </div>
+              <div class="event-flow">
+                <div class="flow-step active"><span></span><strong>创建任务</strong></div>
+                <div class="flow-step"><span></span><strong>解析链接</strong></div>
+                <div class="flow-step"><span></span><strong>写入文件</strong></div>
+                <div class="flow-step"><span></span><strong>完成归档</strong></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="previewView" class="view" data-title="作者预览" data-eyebrow="主页解析">
+          <div class="preview-layout">
+            <section class="surface-panel link-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>作者主页链接</h2>
+                  <p>粘贴分享主页链接或完整分享文案</p>
+                </div>
+                <span id="previewResolveBadge" class="soft-badge">待解析</span>
+              </div>
+              <textarea id="previewUrlInput" class="url-input" rows="5" spellcheck="false" placeholder="粘贴作者主页链接或分享主页文案"></textarea>
+              <div class="action-row">
+                <button id="resolveAuthorBtn" class="secondary-button" type="button">解析作者</button>
+              </div>
+              <div id="previewAuthorResult" class="result-strip muted">等待输入</div>
+            </section>
+
+            <section class="surface-panel choices-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>选择预览内容</h2>
+                  <p>点击卡片进入预览后勾选下载</p>
+                </div>
+              </div>
+              <div id="previewModeGrid" class="mode-grid" aria-label="预览内容"></div>
+            </section>
+          </div>
+
+          <section id="authorWorksPanel" class="surface-panel author-workbench hidden">
+            <div class="panel-head author-workbench-head">
+              <button id="closeAuthorWorksBtn" class="ghost-button compact" type="button">返回</button>
+              <div id="authorWorksProfile" class="author-profile"></div>
+              <div class="button-cluster">
+                <button id="downloadSelectedWorksBtn" class="primary-button" type="button" disabled>下载选中作品</button>
+              </div>
+            </div>
+            <div class="filter-row work-filters">
+              <div id="workModeTabs" class="tabs" role="tablist">
+                <button class="active" type="button" data-work-mode="post">作品</button>
+                <button type="button" data-work-mode="like">喜欢</button>
+                <button type="button" data-work-mode="mix">合集</button>
+                <button type="button" data-work-mode="music">音乐</button>
+              </div>
+              <input id="workSearch" class="field-input" type="search" placeholder="搜索标题" />
+              <select id="workTypeFilter" class="field-input select-field">
+                <option value="">全部类型</option>
+                <option value="video">视频</option>
+                <option value="gallery">图文</option>
+                <option value="mix">合集</option>
+                <option value="music">音乐</option>
+              </select>
+              <select id="workSort" class="field-input select-field">
+                <option value="newest">最新发布</option>
+                <option value="digg">最多点赞</option>
+                <option value="title">按标题</option>
+              </select>
+              <input id="workDateFrom" class="field-input" type="date" />
+              <input id="workDateTo" class="field-input" type="date" />
+              <button id="loadMoreWorksBtn" class="secondary-button" type="button" disabled>加载更多</button>
+            </div>
+            <div id="authorWorksList" class="works-grid"></div>
+          </section>
+        </section>
+
+        <section id="liveView" class="view" data-title="直播录制" data-eyebrow="实验性功能">
+          <section class="surface-panel link-panel">
+            <div class="panel-head">
+              <div>
+                <h2>录制直播流</h2>
+                <p>粘贴直播短链、live.douyin.com 链接或完整分享文案，任务中心会实时显示录制状态。</p>
+              </div>
+              <span id="liveBadge" class="soft-badge">待创建</span>
+            </div>
+            <textarea id="liveUrlInput" class="url-input" rows="5" spellcheck="false" placeholder="粘贴直播链接或完整分享文案"></textarea>
+            <div class="filter-row">
+              <label class="field-label">最大录制秒数<input id="liveMaxDuration" class="field-input" type="number" min="0" value="0" /></label>
+              <label class="field-label">空闲超时秒数<input id="liveIdleTimeout" class="field-input" type="number" min="1" value="30" /></label>
+              <label class="toggle-line"><input id="liveConvertToMp4" type="checkbox" checked />录制后转 MP4</label>
+              <label class="toggle-line"><input id="liveKeepSourceFlv" type="checkbox" checked />保留 FLV 源文件</label>
+            </div>
+            <div class="action-row">
+              <button id="startLiveBtn" class="primary-button" type="button">开始录制</button>
+              <button id="stopLiveBtn" class="ghost-button danger" type="button" disabled>停止当前录制</button>
+            </div>
+            <div id="liveResult" class="result-strip muted">0 表示不限制录制时长，直到直播结束或手动停止。</div>
+          </section>
+        </section>
+
+        <section id="followingView" class="view" data-title="我的关注" data-eyebrow="账号内容">
+          <section class="surface-panel toolbar-panel">
+            <div class="panel-head">
+              <div>
+                <h2>关注列表</h2>
+                <p id="followSyncState">尚未同步</p>
+              </div>
+              <div class="button-cluster">
+                <button id="syncFollowingBtn" class="secondary-button" type="button">同步关注</button>
+                <button id="downloadSelectedFollowBtn" class="primary-button" type="button" disabled>下载选中</button>
+              </div>
+            </div>
+            <div class="filter-row">
+              <input id="followSearch" class="field-input" type="search" placeholder="搜索昵称 / 签名" />
+              <select id="followSort" class="field-input select-field">
+                <option value="name">按昵称</option>
+                <option value="aweme">按作品数</option>
+                <option value="fans">按粉丝数</option>
+              </select>
+              <select id="followDownloadMode" class="field-input select-field">
+                <option value="post">下载作品</option>
+                <option value="like">下载喜欢</option>
+                <option value="mix">下载合集</option>
+                <option value="music">下载音乐</option>
+              </select>
+              <div class="segmented" role="group" aria-label="视图">
+                <button class="active" type="button" data-follow-layout="list">列表</button>
+                <button type="button" data-follow-layout="grid">网格</button>
+              </div>
+            </div>
+          </section>
+          <div id="followingList" class="entity-list"></div>
+        </section>
+
+        <section id="collectionsView" class="view" data-title="我的收藏" data-eyebrow="账号内容">
+          <section class="surface-panel toolbar-panel">
+            <div class="panel-head">
+              <div>
+                <h2>我的收藏</h2>
+                <p id="collectionSyncState">尚未同步</p>
+              </div>
+              <div class="button-cluster">
+                <button id="syncCollectionsBtn" class="secondary-button" type="button">同步收藏</button>
+                <button id="downloadAllCollectionsBtn" class="primary-button" type="button" disabled>下载全部收藏夹</button>
+                <button id="downloadAllCollectMixBtn" class="secondary-button" type="button" disabled>下载全部收藏合集</button>
+              </div>
+            </div>
+            <div class="filter-row">
+              <input id="collectionSearch" class="field-input" type="search" placeholder="搜索收藏夹 / 合集" />
+              <div id="collectionTabs" class="tabs" role="tablist">
+                <button class="active" type="button" data-collection-type="all">全部</button>
+                <button type="button" data-collection-type="folder">收藏夹</button>
+                <button type="button" data-collection-type="mix">收藏合集</button>
+              </div>
+            </div>
+          </section>
+          <section id="collectionWorksPanel" class="surface-panel author-workbench hidden">
+            <div class="panel-head author-workbench-head">
+              <button id="closeCollectionWorksBtn" class="ghost-button compact" type="button">返回收藏</button>
+              <div id="collectionWorksProfile" class="author-profile"></div>
+              <div class="button-cluster">
+                <button id="downloadSelectedCollectionWorksBtn" class="primary-button" type="button" disabled>下载选中作品</button>
+              </div>
+            </div>
+            <div class="filter-row work-filters">
+              <input id="collectionWorkSearch" class="field-input" type="search" placeholder="搜索标题" />
+              <select id="collectionWorkTypeFilter" class="field-input select-field">
+                <option value="">全部类型</option>
+                <option value="video">视频</option>
+                <option value="gallery">图文</option>
+              </select>
+              <select id="collectionWorkSort" class="field-input select-field">
+                <option value="newest">最新发布</option>
+                <option value="digg">最多点赞</option>
+                <option value="title">按标题</option>
+              </select>
+              <input id="collectionWorkDateFrom" class="field-input" type="date" />
+              <input id="collectionWorkDateTo" class="field-input" type="date" />
+              <button id="loadMoreCollectionWorksBtn" class="secondary-button" type="button" disabled>加载更多</button>
+            </div>
+            <div id="collectionWorksList" class="works-grid"></div>
+          </section>
+          <div id="collectionsList" class="entity-list"></div>
+        </section>
+
+        <section id="batchView" class="view" data-title="批量下载" data-eyebrow="批量任务">
+          <section class="surface-panel batch-panel">
+            <div class="panel-head">
+              <div>
+                <h2>批量链接</h2>
+                <p>每行一个链接或分享文案</p>
+              </div>
+              <button id="startBatchBtn" class="primary-button" type="button">批量创建</button>
+            </div>
+            <textarea id="batchInput" class="url-input batch-input" rows="12" spellcheck="false" placeholder="https://v.douyin.com/..."></textarea>
+            <div id="batchResult" class="result-strip muted">等待输入</div>
+          </section>
+        </section>
+
+        <section id="tasksView" class="view" data-title="任务中心" data-eyebrow="下载队列">
+          <section class="surface-panel toolbar-panel">
+            <div class="summary-grid">
+              <div><span id="taskTotal">0</span><small>全部</small></div>
+              <div><span id="taskRunning">0</span><small>运行中</small></div>
+              <div><span id="taskDone">0</span><small>完成</small></div>
+              <div><span id="taskFailed">0</span><small>失败</small></div>
+            </div>
+            <div class="filter-row">
+              <input id="taskSearch" class="field-input" type="search" placeholder="搜索任务 URL / ID" />
+              <div id="taskTabs" class="tabs" role="tablist">
+                <button class="active" type="button" data-status="all">全部</button>
+                <button type="button" data-status="running">运行中</button>
+                <button type="button" data-status="success">已完成</button>
+                <button type="button" data-status="failed">失败</button>
+              </div>
+              <button id="clearDoneJobsBtn" class="ghost-button" type="button">清理完成</button>
+            </div>
+          </section>
+          <div id="taskList" class="task-grid"></div>
+        </section>
+
+        <section id="archiveView" class="view" data-title="下载记录" data-eyebrow="本地历史">
+          <section class="archive-hero">
+            <div>
+              <h2>下载记录</h2>
+              <p id="archiveSubtitle">0 条本地记录</p>
+            </div>
+            <div id="topAuthors" class="author-strip"></div>
+          </section>
+          <section class="surface-panel toolbar-panel">
+            <div class="filter-row archive-filters">
+              <input id="archiveAuthor" class="field-input" type="search" placeholder="作者" />
+              <input id="archiveTitle" class="field-input" type="search" placeholder="标题" />
+              <select id="archiveType" class="field-input select-field">
+                <option value="">全部类型</option>
+                <option value="video">视频</option>
+                <option value="gallery">图文</option>
+                <option value="music">音乐</option>
+                <option value="live">直播</option>
+              </select>
+              <input id="archiveFrom" class="field-input" type="date" />
+              <input id="archiveTo" class="field-input" type="date" />
+              <button id="applyArchiveFilterBtn" class="secondary-button" type="button">筛选</button>
+              <button id="deleteArchiveBtn" class="ghost-button danger" type="button" disabled>删除</button>
+            </div>
+          </section>
+          <div id="archiveList" class="archive-list"></div>
+        </section>
+
+        <section id="settingsView" class="view" data-title="设置" data-eyebrow="偏好">
+          <div class="settings-layout">
+            <section class="surface-panel settings-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>命名与目录</h2>
+                  <p id="settingsSaveState">未保存更改</p>
+                </div>
+                <button id="saveSettingsBtn" class="primary-button" type="button">保存设置</button>
+              </div>
+              <div class="form-grid">
+                <label class="field-label">数据目录<input id="settingDataDir" class="field-input" type="text" /></label>
+                <label class="field-label">下载目录<input id="settingPath" class="field-input" type="text" /></label>
+                <label class="field-label">作者目录<select id="settingAuthorDir" class="field-input select-field">
+                  <option value="nickname">昵称</option>
+                  <option value="sec_uid">Sec UID</option>
+                  <option value="nickname_uid">昵称 + UID</option>
+                  <option value="user_sec_uid">user_sec_uid</option>
+                </select></label>
+                <label class="field-label">文件模板<input id="settingFilenameTemplate" class="field-input" type="text" /></label>
+                <label class="field-label">文件夹模板<input id="settingFolderTemplate" class="field-input" type="text" /></label>
+                <label class="toggle-line"><input id="settingFolderstyle" type="checkbox" />为单作品创建文件夹</label>
+                <label class="toggle-line"><input id="settingGroupByMode" type="checkbox" />按下载类型分组</label>
+              </div>
+              <details class="variables-box">
+                <summary>可用变量</summary>
+                <div>{date} {title} {id} {author} {sec_uid} {create_time}</div>
+              </details>
+            </section>
+
+            <section class="surface-panel settings-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>下载与账号</h2>
+                  <p id="settingsCookieState">账号状态</p>
+                </div>
+                <div class="button-cluster">
+                  <button id="startLoginBtn" class="primary-button" type="button">一键登录抖音</button>
+                  <button id="cancelLoginBtn" class="ghost-button danger" type="button" disabled>停止登录</button>
+                  <button id="clearCookiesBtn" class="ghost-button danger" type="button">清除登录态</button>
+                </div>
+              </div>
+              <div class="form-grid">
+                <label class="field-label">线程数<input id="settingThread" class="field-input" type="number" min="1" max="64" /></label>
+                <label class="field-label">限速<input id="settingRateLimit" class="field-input" type="number" min="0.1" step="0.1" /></label>
+                <label class="field-label">重试次数<input id="settingRetryTimes" class="field-input" type="number" min="0" max="20" /></label>
+                <label class="field-label">代理<input id="settingProxy" class="field-input" type="text" placeholder="http://127.0.0.1:7890" /></label>
+                <label class="toggle-line"><input id="settingMusic" type="checkbox" />下载音乐</label>
+                <label class="toggle-line"><input id="settingCover" type="checkbox" />下载封面</label>
+                <label class="toggle-line"><input id="settingAvatar" type="checkbox" />下载头像</label>
+                <label class="toggle-line"><input id="settingJson" type="checkbox" />保存 JSON</label>
+                <label class="toggle-line"><input id="settingCommentsEnabled" type="checkbox" />采集评论</label>
+                <label class="toggle-line"><input id="settingCommentsReplies" type="checkbox" />包含评论回复</label>
+                <label class="field-label">评论上限<input id="settingMaxComments" class="field-input" type="number" min="0" /></label>
+                <label class="field-label">默认直播秒数<input id="settingLiveMaxDuration" class="field-input" type="number" min="0" /></label>
+                <label class="field-label">直播空闲超时<input id="settingLiveIdleTimeout" class="field-input" type="number" min="1" /></label>
+                <label class="toggle-line"><input id="settingLiveConvertToMp4" type="checkbox" />直播后转 MP4</label>
+                <label class="toggle-line"><input id="settingLiveKeepSourceFlv" type="checkbox" />保留 FLV 源文件</label>
+              </div>
+              <div id="loginProgress" class="result-strip muted">点击“一键登录抖音”后，会打开抖音网页；你完成登录时后台会自动提取 Cookie。</div>
+              <div id="cookieFile" class="result-strip muted"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toastHost" class="toast-host" aria-live="polite"></div>
+    <script src="/static/legacy/app.js?v=20260704-15" defer></script>
+  </body>
+</html>
